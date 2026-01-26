@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Sistema de Propostas{% endblock %}</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    
+    <style>
+        body {
+            background-color: #f3f5f9;
+        }
+        .app-shell {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: row;
+        }
+        .sidebar {
+            width: 260px;
+            background: linear-gradient(180deg, #212529 0%, #111418 100%);
+            color: #fff;
+            position: fixed;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            padding: 24px 18px;
+            overflow-y: auto;
+        }
+        .sidebar-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 700;
+            font-size: 1.1rem;
+            margin-bottom: 24px;
+            color: #fff;
+            text-decoration: none;
+        }
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.75);
+            border-radius: 10px;
+            padding: 10px 14px;
+            margin-bottom: 6px;
+        }
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            color: #fff;
+            background: rgba(255,255,255,0.12);
+        }
+        .content-area {
+            flex: 1;
+            margin-left: 260px;
+            padding: 24px 28px 80px 28px;
+        }
+        @media (max-width: 991.98px) {
+            .sidebar {
+                position: relative;
+                width: 100%;
+                height: auto;
+            }
+            .content-area {
+                margin-left: 0;
+                padding: 20px 16px 60px 16px;
+            }
+        }
+        .card {
+            box-shadow: 0 0 10px rgba(0,0,0,.1);
+            border: none;
+        }
+        .btn-primary {
+            background-color: #0d6efd;
+            border-color: #0d6efd;
+        }
+        .btn-primary:hover {
+            background-color: #0b5ed7;
+            border-color: #0a58ca;
+        }
+        .alert {
+            border-radius: 8px;
+        }
+        .table {
+            background-color: white;
+        }
+        footer {
+            margin-top: 50px;
+            padding: 20px 0;
+            background-color: #343a40;
+            color: white;
+        }
+    </style>
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <a class="sidebar-brand" href="{{ url_for('index') }}">
+                <i class="bi bi-file-earmark-pdf"></i>
+                Sistema de Propostas
+            </a>
+            <nav class="nav flex-column">
+                <a class="nav-link {% if request.endpoint == 'upload' %}active{% endif %}" href="{{ url_for('upload') }}">
+                    <i class="bi bi-upload"></i> Importar PDF
+                </a>
+                <a class="nav-link {% if request.endpoint == 'listagem' %}active{% endif %}" href="{{ url_for('listagem') }}">
+                    <i class="bi bi-list-ul"></i> Listagem
+                </a>
+                <a class="nav-link {% if request.endpoint in ['clientes', 'clientes_novo', 'cliente_detalhes'] %}active{% endif %}" href="{{ url_for('clientes') }}">
+                    <i class="bi bi-people"></i> Clientes
+                </a>
+                <a class="nav-link {% if request.endpoint in ['relatorio', 'relatorio_export'] %}active{% endif %}" href="{{ url_for('relatorio') }}">
+                    <i class="bi bi-file-earmark-spreadsheet"></i> Relatório
+                </a>
+            </nav>
+        </aside>
+
+        <div class="content-area">
+            <!-- Mensagens Flash -->
+            <div class="container-fluid mb-3">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show" role="alert">
+                                {% if category == 'success' %}
+                                    <i class="bi bi-check-circle-fill"></i>
+                                {% elif category == 'error' %}
+                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                {% elif category == 'warning' %}
+                                    <i class="bi bi-exclamation-circle-fill"></i>
+                                {% else %}
+                                    <i class="bi bi-info-circle-fill"></i>
+                                {% endif %}
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+            </div>
+
+            <!-- Conteúdo Principal -->
+            <main class="container-fluid">
+                {% block content %}{% endblock %}
+            </main>
+
+            <!-- Footer -->
+            <footer class="text-center">
+                <div class="container">
+                    <p class="mb-0">&copy; 2025 Sistema de Propostas Comerciais. Todos os direitos reservados.</p>
+                </div>
+            </footer>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

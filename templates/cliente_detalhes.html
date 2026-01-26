@@ -1,0 +1,539 @@
+{% extends "base.html" %}
+
+{% block title %}Cliente - Sistema de Propostas{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="bi bi-building"></i> {{ cliente.nome }}
+                </h4>
+                <div class="d-flex gap-2">
+                    <a href="{{ url_for('cliente_editar', id=cliente.id) }}" class="btn btn-warning btn-sm text-dark">
+                        <i class="bi bi-pencil-square"></i> Editar
+                    </a>
+                    <form method="POST" action="{{ url_for('cliente_deletar', id=cliente.id) }}"
+                          onsubmit="return confirm('Tem certeza que deseja deletar este cliente?');">
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="bi bi-trash"></i> Deletar
+                        </button>
+                    </form>
+                    <a href="{{ url_for('clientes') }}" class="btn btn-light btn-sm">
+                        <i class="bi bi-arrow-left"></i> Voltar
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <strong>CNPJ:</strong> {{ cliente.cnpj }}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Contato:</strong> {{ cliente.contato or 'N/A' }}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Email:</strong> {{ cliente.email or 'N/A' }}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Telefone:</strong> {{ cliente.telefone or 'N/A' }}
+                    </div>
+                    <div class="col-md-12">
+                        <strong>Endereço:</strong> {{ cliente.endereco or 'N/A' }}
+                    </div>
+                    <div class="col-md-4">
+                        <strong>Região:</strong> {{ cliente.regiao or 'N/A' }}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="bi bi-person-lines-fill"></i> Contatos
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('contatos_novo', id=cliente.id) }}" class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <label for="contato_nome" class="form-label">Nome</label>
+                        <input type="text" class="form-control" id="contato_nome" name="nome" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label for="contato_email" class="form-label">Email</label>
+                        <input type="email" class="form-control" id="contato_email" name="email">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="contato_telefone" class="form-label">Telefone</label>
+                        <input type="text" class="form-control" id="contato_telefone" name="telefone">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="contato_cargo" class="form-label">Cargo (opcional)</label>
+                        <input type="text" class="form-control" id="contato_cargo" name="cargo">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="contato_setor" class="form-label">Setor</label>
+                        <div class="input-group">
+                            <select class="form-select" id="contato_setor" name="setor">
+                                <option value="">Selecione...</option>
+                                {% for s in setores %}
+                                    <option value="{{ s.nome }}">{{ s.nome }}</option>
+                                {% endfor %}
+                            </select>
+                            <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#modalSetor">
+                                <i class="bi bi-plus-circle"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-plus-circle"></i> Adicionar Contato
+                        </button>
+                    </div>
+                </form>
+
+                {% if contatos %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Nome</th>
+                                <th>Email</th>
+                                <th>Telefone</th>
+                                <th>Cargo</th>
+                                <th>Setor</th>
+                                <th class="text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for contato in contatos %}
+                            <tr>
+                                <td><strong>{{ contato.nome }}</strong></td>
+                                <td>{{ contato.email or '—' }}</td>
+                                <td>{{ contato.telefone or '—' }}</td>
+                                <td>{{ contato.cargo or '—' }}</td>
+                                <td>{{ contato.setor or '—' }}</td>
+                                <td class="text-center">
+                                    <a href="{{ url_for('contato_editar', id=contato.id) }}" class="btn btn-sm btn-warning text-dark" title="Editar">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+                                    <form method="POST" action="{{ url_for('contato_deletar', id=contato.id) }}" class="d-inline"
+                                          onsubmit="return confirm('Tem certeza que deseja deletar este contato?');">
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Deletar">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-warning text-center mb-0">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Nenhum contato cadastrado.</strong>
+                    <p class="mb-0">Adicione o primeiro contato acima.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="bi bi-file-earmark-text"></i> Propostas vinculadas
+                </h4>
+                <a href="{{ url_for('upload') }}" class="btn btn-light btn-sm">
+                    <i class="bi bi-plus-circle"></i> Importar Proposta
+                </a>
+            </div>
+            <div class="card-body">
+                {% if propostas %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ID Proposta</th>
+                                <th>Razão Social</th>
+                                <th>Data Emissão</th>
+                                <th>Valor Total</th>
+                                <th class="text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for proposta in propostas %}
+                            <tr>
+                                <td><strong>{{ proposta.id_proposta or 'N/A' }}</strong></td>
+                                <td>{{ proposta.razao_social or 'N/A' }}</td>
+                                <td>{{ proposta.data_emissao or 'N/A' }}</td>
+                                <td>{{ proposta.valor_total or 'N/A' }}</td>
+                                <td class="text-center">
+                                    <a href="{{ url_for('detalhes', id=proposta.id) }}" 
+                                       class="btn btn-sm btn-info text-white" title="Ver detalhes">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-warning text-center">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Nenhuma proposta vinculada a este CNPJ.</strong>
+                    <p class="mb-0">Quando uma proposta for importada com o mesmo CNPJ, ela aparecerá aqui.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="bi bi-shield-check"></i> CPM - Contrato de Manutenção Preventiva
+                </h4>
+            </div>
+            <div class="card-body">
+                <p class="mb-3">
+                    <strong>Status atual:</strong>
+                    {% if cliente.cpm_status == 'Vigente' %}
+                        Vigente
+                    {% elif cliente.cpm_status == 'Vencido' %}
+                        Vencido
+                    {% elif cliente.cpm_status == 'Nao possui' %}
+                        Não possui
+                    {% else %}
+                        N/A
+                    {% endif %}
+                    {% if cliente.cpm_status in ['Vigente', 'Vencido'] %}
+                        {% if cliente.cpm_data %}
+                            <span class="ms-2">
+                                {% if cliente.cpm_status == 'Vigente' %}
+                                    (vence em {{ cliente.cpm_data.strftime('%d/%m/%Y') }})
+                                {% else %}
+                                    (venceu em {{ cliente.cpm_data.strftime('%d/%m/%Y') }})
+                                {% endif %}
+                            </span>
+                        {% endif %}
+                    {% endif %}
+                </p>
+                <form method="POST" action="{{ url_for('cliente_cpm_atualizar', id=cliente.id) }}" class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label for="cpm_status" class="form-label">CPM</label>
+                        <select class="form-select" id="cpm_status" name="cpm_status">
+                            <option value="">Selecione...</option>
+                            <option value="Vigente" {% if cliente.cpm_status == 'Vigente' %}selected{% endif %}>Vigente</option>
+                            <option value="Vencido" {% if cliente.cpm_status == 'Vencido' %}selected{% endif %}>Vencido</option>
+                            <option value="Nao possui" {% if cliente.cpm_status == 'Nao possui' %}selected{% endif %}>Não possui</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="cpm_data" class="form-label">Data (vence/venceu)</label>
+                        <input type="date" class="form-control" id="cpm_data" name="cpm_data" value="{{ cliente.cpm_data.strftime('%Y-%m-%d') if cliente.cpm_data else '' }}">
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-check-circle"></i> Salvar CPM
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="bi bi-hdd-stack"></i> Parque instalado
+                </h4>
+                <button type="button" class="btn btn-light btn-sm" data-bs-toggle="modal" data-bs-target="#modalEquipamento">
+                    <i class="bi bi-plus-circle"></i> Adicionar Equipamento
+                </button>
+            </div>
+            <div class="card-body">
+                {% if equipamentos %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Equipamento</th>
+                                <th>Quantidade</th>
+                                <th>Marca</th>
+                                <th>Modelo</th>
+                                <th>Ano</th>
+                                <th class="text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for eq in equipamentos %}
+                            <tr>
+                                <td><strong>{{ eq.nome }}</strong></td>
+                                <td>{{ eq.quantidade or '—' }}</td>
+                                <td>{{ eq.marca or '—' }}</td>
+                                <td>{{ eq.modelo or '—' }}</td>
+                                <td>{{ eq.ano_instalacao or '—' }}</td>
+                                <td class="text-center">
+                                    <a href="{{ url_for('equipamento_editar', id=eq.id) }}" class="btn btn-sm btn-warning text-dark" title="Editar">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+                                    <form method="POST" action="{{ url_for('equipamento_deletar', id=eq.id) }}" class="d-inline"
+                                          onsubmit="return confirm('Tem certeza que deseja deletar este equipamento?');">
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Deletar">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-warning text-center mb-0">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Nenhum equipamento cadastrado.</strong>
+                    <p class="mb-0">Adicione o primeiro equipamento no botão acima.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card mt-4">
+            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="bi bi-calendar-check"></i> Visitas
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('visitas_nova', id=cliente.id) }}" class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label for="data" class="form-label">Data</label>
+                        <input type="date" class="form-control" id="data" name="data" required>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="historico" class="form-label">Histórico</label>
+                        <textarea class="form-control" id="historico" name="historico" rows="4" placeholder="Descreva a visita..."></textarea>
+                    </div>
+                    <div class="col-md-4 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-plus-circle"></i> Adicionar Visita
+                        </button>
+                    </div>
+                </form>
+
+                {% if visitas %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Data</th>
+                                <th>Histórico</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for visita in visitas %}
+                            <tr>
+                                <td>{{ visita.data.strftime('%d/%m/%Y') }}</td>
+                                <td>
+                                    {% if visita.historico %}
+                                        {% if visita.historico|length > 120 %}
+                                            {{ visita.historico[:120] }}...
+                                            <button type="button" class="btn btn-sm btn-outline-secondary ms-2"
+                                                    data-bs-toggle="modal" data-bs-target="#modalHistorico"
+                                                    data-historico='{{ visita.historico|tojson }}'>
+                                                Ver mais
+                                            </button>
+                                        {% else %}
+                                            {{ visita.historico }}
+                                        {% endif %}
+                                    {% else %}
+                                        —
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-warning text-center mb-0">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Nenhuma visita registrada.</strong>
+                    <p class="mb-0">Cadastre a primeira visita acima.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para adicionar setor -->
+<div class="modal fade" id="modalSetor" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('setores_novo') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Novo Setor</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label for="setor_nome" class="form-label">Nome do setor</label>
+                    <input type="text" class="form-control" id="setor_nome" name="setor_nome" placeholder="Ex: Engenharia Clínica" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para histórico completo -->
+<div class="modal fade" id="modalHistorico" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-card-text"></i> Histórico completo</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="historicoCompleto" class="mb-0"
+                     style="white-space: pre-wrap; overflow-wrap: anywhere; word-break: break-word;"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para adicionar equipamentos -->
+<div class="modal fade" id="modalEquipamento" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('equipamentos_novo', id=cliente.id) }}">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Adicionar Equipamento</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="mb-0">Equipamentos</h6>
+                        <button type="button" class="btn btn-outline-primary btn-sm" id="addEquipamentoBtn">
+                            <i class="bi bi-plus-circle"></i> Adicionar mais
+                        </button>
+                    </div>
+                    <div id="equipamentosContainer">
+                        <div class="row g-3 align-items-end equipamento-row">
+                            <div class="col-md-3">
+                                <label class="form-label">Nome</label>
+                                <input type="text" class="form-control" name="equipamento_nome[]" required>
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Quantidade</label>
+                                <input type="number" class="form-control" name="equipamento_quantidade[]" min="1">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Marca</label>
+                                <input type="text" class="form-control" name="equipamento_marca[]">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Modelo</label>
+                                <input type="text" class="form-control" name="equipamento_modelo[]">
+                            </div>
+                            <div class="col-md-2">
+                                <label class="form-label">Ano</label>
+                                <input type="number" class="form-control" name="equipamento_ano[]" min="1900" max="2100">
+                            </div>
+                            <div class="col-md-1 d-grid">
+                                <button type="button" class="btn btn-outline-danger btn-sm remove-equipamento">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <hr>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const modalHistorico = document.getElementById('modalHistorico');
+    if (modalHistorico) {
+        modalHistorico.addEventListener('show.bs.modal', (event) => {
+            const button = event.relatedTarget;
+            let texto = button?.getAttribute('data-historico') || '""';
+            try {
+                texto = JSON.parse(texto);
+            } catch (e) {
+                texto = button?.getAttribute('data-historico') || '';
+            }
+            const alvo = modalHistorico.querySelector('#historicoCompleto');
+            if (alvo) {
+                const normalizado = String(texto).replace(/\r\n/g, '\n');
+                alvo.textContent = normalizado;
+            }
+        });
+    }
+</script>
+<script>
+    const equipamentosContainer = document.getElementById('equipamentosContainer');
+    const addEquipamentoBtn = document.getElementById('addEquipamentoBtn');
+
+    if (addEquipamentoBtn) {
+        addEquipamentoBtn.addEventListener('click', () => {
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = `
+                <div class="row g-3 align-items-end equipamento-row mt-2">
+                    <div class="col-md-3">
+                        <label class="form-label">Nome</label>
+                        <input type="text" class="form-control" name="equipamento_nome[]" required>
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Quantidade</label>
+                        <input type="number" class="form-control" name="equipamento_quantidade[]" min="1">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Marca</label>
+                        <input type="text" class="form-control" name="equipamento_marca[]">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Modelo</label>
+                        <input type="text" class="form-control" name="equipamento_modelo[]">
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label">Ano</label>
+                        <input type="number" class="form-control" name="equipamento_ano[]" min="1900" max="2100">
+                    </div>
+                    <div class="col-md-1 d-grid">
+                        <button type="button" class="btn btn-outline-danger btn-sm remove-equipamento">
+                            <i class="bi bi-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                <hr>
+            `;
+            wrapper.querySelector('.remove-equipamento').addEventListener('click', () => {
+                wrapper.remove();
+            });
+            equipamentosContainer.appendChild(wrapper);
+        });
+
+        document.querySelectorAll('.remove-equipamento').forEach((btn) => {
+            btn.addEventListener('click', (e) => {
+                const row = e.currentTarget.closest('.equipamento-row');
+                if (row) row.remove();
+            });
+        });
+    }
+</script>
+{% endblock %}

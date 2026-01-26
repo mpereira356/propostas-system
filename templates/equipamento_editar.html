@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+
+{% block title %}Editar Equipamento - Sistema de Propostas{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-warning text-dark">
+                <h4 class="mb-0">
+                    <i class="bi bi-pencil-square"></i> Editar Equipamento
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="nome" class="form-label">Nome do equipamento</label>
+                            <input type="text" class="form-control" id="nome" name="nome" value="{{ equipamento.nome }}" required>
+                        </div>
+                        <div class="col-md-3">
+                            <label for="quantidade" class="form-label">Quantidade</label>
+                            <input type="number" class="form-control" id="quantidade" name="quantidade" value="{{ equipamento.quantidade or '' }}" min="1">
+                        </div>
+                        <div class="col-md-3">
+                            <label for="ano" class="form-label">Ano de instalação</label>
+                            <input type="number" class="form-control" id="ano" name="ano" value="{{ equipamento.ano_instalacao or '' }}" min="1900" max="2100">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="marca" class="form-label">Marca</label>
+                            <input type="text" class="form-control" id="marca" name="marca" value="{{ equipamento.marca or '' }}">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="modelo" class="form-label">Modelo</label>
+                            <input type="text" class="form-control" id="modelo" name="modelo" value="{{ equipamento.modelo or '' }}">
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-warning text-dark">
+                            <i class="bi bi-check-circle"></i> Salvar
+                        </button>
+                        <a href="{{ url_for('cliente_detalhes', id=equipamento.cliente_id) }}" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

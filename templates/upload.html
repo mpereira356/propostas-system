@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}Importar PDF - Sistema de Propostas{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-upload"></i> Importar Proposta Comercial
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="bi bi-info-circle"></i>
+                    <strong>Instruções:</strong> Selecione um arquivo PDF de proposta comercial para importar. 
+                    O sistema irá extrair automaticamente todos os dados e salvar no banco de dados.
+                </div>
+
+                <form method="POST" enctype="multipart/form-data" id="uploadForm">
+                    <div class="mb-4">
+                        <label for="pdf_file" class="form-label">
+                            <strong>Selecione o arquivo PDF:</strong>
+                        </label>
+                        <input type="file" 
+                               class="form-control form-control-lg" 
+                               id="pdf_file" 
+                               name="pdf_file" 
+                               accept=".pdf"
+                               required>
+                        <div class="form-text">
+                            Apenas arquivos PDF são aceitos. Tamanho máximo: 16MB
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary btn-lg" id="btnSubmit">
+                            <i class="bi bi-cloud-upload"></i> Importar Proposta
+                        </button>
+                    </div>
+                </form>
+
+                <hr class="my-4">
+
+                <div class="text-center">
+                    <p class="text-muted mb-2">Após a importação, você será redirecionado para a página de detalhes.</p>
+                    <a href="{{ url_for('listagem') }}" class="btn btn-outline-secondary">
+                        <i class="bi bi-list-ul"></i> Ver Propostas Importadas
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Card informativo -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-question-circle"></i> Dados Extraídos Automaticamente
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-check text-success"></i> Razão Social</li>
+                            <li><i class="bi bi-check text-success"></i> Nome Fantasia</li>
+                            <li><i class="bi bi-check text-success"></i> ID da Proposta</li>
+                            <li><i class="bi bi-check text-success"></i> Data de Emissão</li>
+                            <li><i class="bi bi-check text-success"></i> Validade</li>
+                            <li><i class="bi bi-check text-success"></i> CNPJ</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <ul class="list-unstyled">
+                            <li><i class="bi bi-check text-success"></i> Telefone</li>
+                            <li><i class="bi bi-check text-success"></i> Celular</li>
+                            <li><i class="bi bi-check text-success"></i> E-mail</li>
+                            <li><i class="bi bi-check text-success"></i> Pessoa de Contato</li>
+                            <li><i class="bi bi-check text-success"></i> Itens e Valores</li>
+                            <li><i class="bi bi-check text-success"></i> Valor Total</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Mostrar nome do arquivo selecionado
+    document.getElementById('pdf_file').addEventListener('change', function(e) {
+        const fileName = e.target.files[0]?.name;
+        if (fileName) {
+            console.log('Arquivo selecionado:', fileName);
+        }
+    });
+
+    // Mostrar loading ao enviar
+    document.getElementById('uploadForm').addEventListener('submit', function() {
+        const btn = document.getElementById('btnSubmit');
+        btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processando...';
+        btn.disabled = true;
+    });
+</script>
+{% endblock %}

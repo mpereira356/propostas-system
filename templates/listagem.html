@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Listagem de Propostas - Sistema de Propostas{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                <h4 class="mb-0">
+                    <i class="bi bi-list-ul"></i> Propostas Importadas
+                </h4>
+                <a href="{{ url_for('upload') }}" class="btn btn-light btn-sm">
+                    <i class="bi bi-plus-circle"></i> Nova Importação
+                </a>
+            </div>
+            <div class="card-body">
+                <!-- Filtros -->
+                <form method="GET" class="row g-3 mb-4">
+                    <div class="col-md-4">
+                        <label for="razao_social" class="form-label">Razão Social</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="razao_social" 
+                               name="razao_social" 
+                               value="{{ filtros.razao_social }}"
+                               placeholder="Digite a razão social">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="cnpj" class="form-label">CNPJ</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="cnpj" 
+                               name="cnpj" 
+                               value="{{ filtros.cnpj }}"
+                               placeholder="00.000.000/0000-00">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="id_proposta" class="form-label">ID da Proposta</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="id_proposta" 
+                               name="id_proposta" 
+                               value="{{ filtros.id_proposta }}"
+                               placeholder="BA.0000/0000">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="cod_vendedor" class="form-label">Cod Vendedor</label>
+                        <input type="text" 
+                               class="form-control" 
+                               id="cod_vendedor" 
+                               name="cod_vendedor" 
+                               value="{{ filtros.cod_vendedor }}"
+                               placeholder="016">
+                    </div>
+                    <div class="col-md-2 d-flex align-items-end">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-search"></i> Filtrar
+                        </button>
+                    </div>
+                </form>
+
+                {% if filtros.razao_social or filtros.cnpj or filtros.id_proposta or filtros.cod_vendedor %}
+                <div class="mb-3">
+                    <a href="{{ url_for('listagem') }}" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-x-circle"></i> Limpar Filtros
+                    </a>
+                </div>
+                {% endif %}
+
+                <!-- Tabela de Propostas -->
+                {% if propostas %}
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>ID Proposta</th>
+                                <th>Razão Social</th>
+                                <th>CNPJ</th>
+                                <th>Data Emissão</th>
+                                <th>Data Vencimento</th>
+                                <th>Cod Vendedor</th>
+                                <th>Status</th>
+                                <th class="text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for proposta in propostas %}
+                            <tr class="{% if proposta.vencida %}table-danger{% elif proposta.vencendo %}table-warning{% endif %}">
+                                <td>
+                                    <strong>{{ proposta.id_proposta or 'N/A' }}</strong>
+                                </td>
+                                <td>{{ proposta.razao_social or 'Não informado' }}</td>
+                                <td>{{ proposta.cnpj or 'N/A' }}</td>
+                                <td>{{ proposta.data_emissao or 'N/A' }}</td>
+                                <td>
+                                    {{ proposta.data_vencimento.strftime('%d/%m/%Y') if proposta.data_vencimento else 'N/A' }}
+                                </td>
+                                <td>
+                                    {% if proposta.cod_vendedor %}
+                                        <strong>{{ proposta.cod_vendedor }}</strong>
+                                    {% else %}
+                                        <form method="POST" action="{{ url_for('atualizar_cod', id=proposta.id) }}" class="d-flex gap-2">
+                                            <input type="text" name="cod_vendedor" class="form-control form-control-sm" placeholder="cod">
+                                            <button type="submit" class="btn btn-sm btn-outline-primary">Salvar</button>
+                                        </form>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if proposta.vencida %}
+                                        <span class="badge text-bg-danger">Vencida</span>
+                                    {% elif proposta.vencendo %}
+                                        <span class="badge" style="background-color:#fd7e14;">Vencendo</span>
+                                    {% else %}
+                                        <span class="badge text-bg-success">Válida</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-center">
+                                    <a href="{{ url_for('detalhes', id=proposta.id) }}" 
+                                       class="btn btn-sm btn-info text-white"
+                                       title="Ver detalhes">
+                                        <i class="bi bi-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('editar', id=proposta.id) }}"
+                                       class="btn btn-sm btn-warning text-dark"
+                                       title="Editar">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-danger"
+                                            onclick="confirmarDelete({{ proposta.id }}, '{{ proposta.id_proposta }}')"
+                                            title="Deletar">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="mt-3">
+                    <p class="text-muted">
+                        <i class="bi bi-info-circle"></i> 
+                        Total de propostas encontradas: <strong>{{ propostas|length }}</strong>
+                        {% if total_vencidas is not none %}
+                            | Vencidas: <strong class="text-danger">{{ total_vencidas }}</strong>
+                        {% endif %}
+                    </p>
+                </div>
+                {% else %}
+                <div class="alert alert-warning text-center">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <strong>Nenhuma proposta encontrada.</strong>
+                    <p class="mb-0">
+                        {% if filtros.razao_social or filtros.cnpj or filtros.id_proposta %}
+                            Tente ajustar os filtros ou 
+                            <a href="{{ url_for('listagem') }}">limpar os filtros</a>.
+                        {% else %}
+                            <a href="{{ url_for('upload') }}">Importe sua primeira proposta</a> para começar.
+                        {% endif %}
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmação de deleção -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle"></i> Confirmar Exclusão
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja deletar a proposta <strong id="propostaId"></strong>?</p>
+                <p class="text-danger mb-0">
+                    <i class="bi bi-info-circle"></i> Esta ação não pode ser desfeita.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" id="deleteForm" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Deletar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function confirmarDelete(id, idProposta) {
+        document.getElementById('propostaId').textContent = idProposta;
+        document.getElementById('deleteForm').action = '/deletar/' + id;
+        
+        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        modal.show();
+    }
+</script>
+{% endblock %}

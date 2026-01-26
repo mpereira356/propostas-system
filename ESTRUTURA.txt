@@ -1,0 +1,211 @@
+ESTRUTURA DO PROJETO - Sistema de Propostas Comerciais
+========================================================
+
+proposta_system/
+│
+├── app.py                      # Aplicação Flask principal com rotas
+├── models.py                   # Modelos do banco de dados (SQLAlchemy)
+├── pdf_reader.py               # Módulo de extração de dados do PDF
+│
+├── requirements.txt            # Dependências do projeto
+├── README.md                   # Documentação completa
+├── GUIA_RAPIDO.md             # Guia rápido de uso
+├── .gitignore                  # Arquivos ignorados pelo Git
+│
+├── templates/                  # Templates HTML (Jinja2)
+│   ├── base.html              # Template base com navbar e footer
+│   ├── upload.html            # Página de upload de PDF
+│   ├── listagem.html          # Página de listagem com filtros
+│   └── detalhes.html          # Página de detalhes da proposta
+│
+├── static/                     # Arquivos estáticos
+│   └── css/                   # Arquivos CSS customizados (se necessário)
+│
+├── uploads/                    # Diretório para PDFs importados
+│   └── *.pdf                  # Arquivos PDF das propostas
+│
+└── instance/                   # Diretório do Flask (criado automaticamente)
+    └── database.db            # Banco de dados SQLite
+
+
+DESCRIÇÃO DOS ARQUIVOS PRINCIPAIS
+==================================
+
+app.py
+------
+- Configuração do Flask
+- Rotas da aplicação:
+  * / - Redireciona para upload
+  * /upload - Upload e processamento de PDF
+  * /listagem - Lista propostas com filtros
+  * /detalhes/<id> - Detalhes de uma proposta
+  * /deletar/<id> - Deleta uma proposta
+  * /api/propostas - API JSON (lista)
+  * /api/proposta/<id> - API JSON (detalhes)
+- Lógica de upload e validação
+- Integração com extrator de PDF
+- Prevenção de duplicidade
+
+models.py
+---------
+- Modelo Proposta: dados principais da proposta
+- Modelo ItemProposta: itens da tabela de preços
+- Relacionamento 1:N entre Proposta e ItemProposta
+- Métodos to_dict() para serialização JSON
+- Configuração do SQLAlchemy
+
+pdf_reader.py
+-------------
+- Classe PropostaExtractor
+- Extração de texto com pdfplumber
+- Regex para capturar campos:
+  * ID da Proposta
+  * Data de Emissão
+  * Validade
+  * Razão Social
+  * CNPJ
+  * Contatos (telefone, celular, email)
+  * Pessoa de contato
+  * Itens e valores
+- Método extract_all() retorna dicionário completo
+
+templates/
+----------
+base.html: 
+  - Layout base com Bootstrap 5
+  - Navbar responsiva
+  - Sistema de mensagens flash
+  - Footer
+
+upload.html:
+  - Formulário de upload
+  - Validação de arquivo
+  - Lista de campos extraídos
+  - Feedback visual
+
+listagem.html:
+  - Tabela de propostas
+  - Filtros por Razão Social, CNPJ e ID
+  - Botões de ação (ver, deletar)
+  - Modal de confirmação
+
+detalhes.html:
+  - Cards organizados por seção
+  - Tabela de itens
+  - Valores formatados
+  - Opção de deletar
+
+
+BANCO DE DADOS
+==============
+
+Tabela: proposta
+----------------
+- id (INTEGER, PRIMARY KEY)
+- razao_social (VARCHAR(200))
+- nome_fantasia (VARCHAR(200))
+- id_proposta (VARCHAR(50), UNIQUE)
+- data_emissao (VARCHAR(20))
+- validade (VARCHAR(50))
+- cnpj (VARCHAR(20))
+- telefone (VARCHAR(20))
+- celular (VARCHAR(20))
+- email (VARCHAR(100))
+- pessoa_contato (VARCHAR(100))
+- descricao_item (TEXT)
+- quantidade (VARCHAR(20))
+- valor_total (VARCHAR(50))
+- nome_arquivo_pdf (VARCHAR(255))
+- data_importacao (DATETIME, DEFAULT NOW)
+
+Tabela: item_proposta
+---------------------
+- id (INTEGER, PRIMARY KEY)
+- proposta_id (INTEGER, FOREIGN KEY -> proposta.id)
+- numero (VARCHAR(10))
+- descricao (TEXT)
+- quantidade (VARCHAR(20))
+- valor_unitario (VARCHAR(50))
+- valor_total (VARCHAR(50))
+
+
+TECNOLOGIAS UTILIZADAS
+======================
+
+Backend:
+- Python 3.11
+- Flask 3.0.0
+- Flask-SQLAlchemy 3.1.1
+- pdfplumber 0.11.9
+
+Frontend:
+- HTML5
+- Bootstrap 5.3.0
+- Bootstrap Icons 1.10.0
+- JavaScript (vanilla)
+
+Banco de Dados:
+- SQLite (padrão)
+- Compatível com MySQL/PostgreSQL
+
+
+FLUXO DE FUNCIONAMENTO
+======================
+
+1. IMPORTAÇÃO
+   - Usuário acessa /upload
+   - Seleciona arquivo PDF
+   - Sistema valida formato e tamanho
+   - PropostaExtractor extrai dados
+   - Verifica duplicidade por id_proposta
+   - Salva no banco de dados
+   - Redireciona para /detalhes/<id>
+
+2. LISTAGEM
+   - Usuário acessa /listagem
+   - Sistema busca todas as propostas
+   - Aplica filtros se informados
+   - Exibe tabela ordenada por data
+
+3. DETALHES
+   - Usuário clica em "Ver detalhes"
+   - Sistema busca proposta e itens
+   - Exibe dados organizados em cards
+
+4. FILTROS
+   - Usuário preenche campos de filtro
+   - Sistema aplica WHERE com LIKE
+   - Retorna resultados filtrados
+
+5. DELEÇÃO
+   - Usuário clica em deletar
+   - Modal solicita confirmação
+   - Sistema remove do banco
+   - Remove arquivo PDF
+   - Redireciona para listagem
+
+
+SEGURANÇA
+=========
+
+✓ Validação de tipo de arquivo (apenas PDF)
+✓ Limite de tamanho (16MB)
+✓ Nomes de arquivo sanitizados (secure_filename)
+✓ Prevenção de SQL Injection (SQLAlchemy ORM)
+✓ Prevenção de duplicidade
+✓ Secret key para sessões
+
+
+MELHORIAS FUTURAS
+=================
+
+□ Paginação na listagem
+□ Exportação para Excel/CSV
+□ Gráficos e estatísticas
+□ Sistema de usuários e login
+□ Histórico de alterações
+□ Backup automático
+□ Notificações por email
+□ API REST completa
+□ Testes automatizados
+□ Docker containerization

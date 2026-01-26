@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+
+{% block title %}Detalhes da Proposta {{ proposta.id_proposta }} - Sistema de Propostas{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Cabeçalho -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>
+                <i class="bi bi-file-earmark-text"></i> 
+                Proposta {{ proposta.id_proposta or 'N/A' }}
+            </h2>
+            <a href="{{ url_for('listagem') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Voltar
+            </a>
+        </div>
+
+        <!-- Informações Gerais -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle"></i> Informações Gerais
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">ID da Proposta:</th>
+                                <td><strong>{{ proposta.id_proposta or 'N/A' }}</strong></td>
+                            </tr>
+                            <tr>
+                                <th>Data de Emissão:</th>
+                                <td>{{ proposta.data_emissao or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Data de Vencimento:</th>
+                                <td>{{ proposta.data_vencimento.strftime('%d/%m/%Y') if proposta.data_vencimento else 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Validade:</th>
+                                <td>{{ proposta.validade or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Valor Total:</th>
+                                <td>
+                                    {% if proposta.valor_total %}
+                                        <strong class="text-success fs-5">R$ {{ proposta.valor_total }}</strong>
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">Cod Vendedor:</th>
+                                <td>{{ proposta.cod_vendedor or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th width="40%">Arquivo PDF:</th>
+                                <td>
+                                    <i class="bi bi-file-pdf text-danger"></i> 
+                                    {{ proposta.nome_arquivo_pdf or 'N/A' }}
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Data de Importação:</th>
+                                <td>
+                                    {{ proposta.data_importacao.strftime('%d/%m/%Y às %H:%M:%S') if proposta.data_importacao else 'N/A' }}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dados do Cliente -->
+        <div class="card mb-4">
+            <div class="card-header bg-info text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-building"></i> Dados do Cliente
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">Razão Social:</th>
+                                <td>{{ proposta.razao_social or 'Não informado' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Nome Fantasia:</th>
+                                <td>{{ proposta.nome_fantasia or 'Não informado' }}</td>
+                            </tr>
+                            <tr>
+                                <th>CNPJ:</th>
+                                <td>{{ proposta.cnpj or 'N/A' }}</td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-6">
+                        <table class="table table-borderless">
+                            <tr>
+                                <th width="40%">Pessoa de Contato:</th>
+                                <td>{{ proposta.pessoa_contato or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Telefone:</th>
+                                <td>{{ proposta.telefone or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>Celular:</th>
+                                <td>{{ proposta.celular or 'N/A' }}</td>
+                            </tr>
+                            <tr>
+                                <th>E-mail:</th>
+                                <td>
+                                    {% if proposta.email %}
+                                        <a href="mailto:{{ proposta.email }}">{{ proposta.email }}</a>
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Itens da Proposta -->
+        <div class="card mb-4">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-cart"></i> Itens da Proposta
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if itens %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead class="table-dark">
+                            <tr>
+                                <th width="5%">Item</th>
+                                <th width="50%">Descrição</th>
+                                <th width="10%" class="text-center">Quantidade</th>
+                                <th width="17%" class="text-end">Valor Unitário</th>
+                                <th width="18%" class="text-end">Valor Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in itens %}
+                            <tr>
+                                <td><strong>{{ item.numero }}</strong></td>
+                                <td>{{ item.descricao or 'N/A' }}</td>
+                                <td class="text-center">{{ item.quantidade or 'N/A' }}</td>
+                                <td class="text-end">
+                                    {% if item.valor_unitario %}
+                                        R$ {{ item.valor_unitario }}
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    {% if item.valor_total %}
+                                        <strong class="text-success">R$ {{ item.valor_total }}</strong>
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light">
+                            <tr>
+                                <td colspan="4" class="text-end"><strong>TOTAL GERAL:</strong></td>
+                                <td class="text-end">
+                                    <strong class="text-success fs-5">
+                                        R$ {{ proposta.valor_total or '0,00' }}
+                                    </strong>
+                                </td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Nenhum item foi extraído desta proposta.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Serviços Inclusos -->
+        <div class="card mb-4">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0">
+                    <i class="bi bi-tools"></i> Serviços Inclusos
+                </h5>
+            </div>
+            <div class="card-body">
+                <table class="table table-borderless mb-0">
+                    <tr>
+                        <th width="30%">Instalação:</th>
+                        <td>{{ proposta.instalacao_status or 'Não informado' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Qualificações:</th>
+                        <td>{{ proposta.qualificacoes_status or 'Não informado' }}</td>
+                    </tr>
+                    <tr>
+                        <th>Treinamento:</th>
+                        <td>{{ proposta.treinamento_status or 'Não informado' }}</td>
+                    </tr>
+                </table>
+            </div>
+        </div>
+
+        <!-- Garantia -->
+        <div class="card mb-4">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-shield-check"></i> Garantia
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if proposta.garantia_resumo %}
+                    {% if proposta.garantia_resumo %}
+                        <pre class="mb-3">{{ proposta.garantia_resumo }}</pre>
+                    {% endif %}
+                {% else %}
+                    <p class="mb-0">Não informado</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Ações -->
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('listagem') }}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Voltar para Listagem
+                    </a>
+                    <button type="button" 
+                            class="btn btn-danger"
+                            onclick="confirmarDelete({{ proposta.id }}, '{{ proposta.id_proposta }}')">
+                        <i class="bi bi-trash"></i> Deletar Proposta
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de confirmação de deleção -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle"></i> Confirmar Exclusão
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja deletar a proposta <strong id="propostaId"></strong>?</p>
+                <p class="text-danger mb-0">
+                    <i class="bi bi-info-circle"></i> Esta ação não pode ser desfeita e todos os itens associados serão removidos.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="POST" id="deleteForm" style="display: inline;">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bi bi-trash"></i> Deletar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function confirmarDelete(id, idProposta) {
+        document.getElementById('propostaId').textContent = idProposta;
+        document.getElementById('deleteForm').action = '/deletar/' + id;
+        
+        const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+        modal.show();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,209 @@
+{% extends "base.html" %}
+
+{% block title %}Novo Cliente - Sistema de Propostas{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="bi bi-person-plus"></i> Cadastro de Cliente
+                </h4>
+            </div>
+            <div class="card-body">
+                <form method="POST">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label for="nome" class="form-label">Nome</label>
+                            <input type="text" class="form-control" id="nome" name="nome" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="cnpj" class="form-label">CNPJ</label>
+                            <input type="text" class="form-control" id="cnpj" name="cnpj" required placeholder="00.000.000/0000-00">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="contato" class="form-label">Contato principal (opcional)</label>
+                            <input type="text" class="form-control" id="contato" name="contato" placeholder="Nome do contato">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="email" class="form-label">Email principal (opcional)</label>
+                            <input type="email" class="form-control" id="email" name="email" placeholder="contato@empresa.com">
+                        </div>
+                        <div class="col-md-6">
+                            <label for="telefone" class="form-label">Telefone principal (opcional)</label>
+                            <input type="text" class="form-control" id="telefone" name="telefone" placeholder="(00) 0000-0000">
+                        </div>
+                        <div class="col-12">
+                            <label for="endereco" class="form-label">Endereço</label>
+                            <input type="text" class="form-control" id="endereco" name="endereco" placeholder="Rua, número, cidade, UF">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="regiao" class="form-label">Região</label>
+                            <div class="input-group">
+                                <select class="form-select" id="regiao" name="regiao">
+                                    <option value="">Selecione...</option>
+                                    {% for r in regioes %}
+                                        <option value="{{ r.nome }}">{{ r.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                                <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#modalRegiao">
+                                    <i class="bi bi-plus-circle"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="mb-0">Contatos adicionais</h5>
+                            <button class="btn btn-outline-primary btn-sm" type="button" id="addContatoBtn">
+                                <i class="bi bi-plus-circle"></i> Adicionar contato
+                            </button>
+                        </div>
+                        <div id="contatosContainer" class="row g-3">
+                            <div class="col-md-3">
+                                <label class="form-label">Nome</label>
+                                <input type="text" class="form-control" name="contato_nome[]">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" class="form-control" name="contato_email[]">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Telefone</label>
+                                <input type="text" class="form-control" name="contato_telefone[]">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Cargo (opcional)</label>
+                                <input type="text" class="form-control" name="contato_cargo[]">
+                            </div>
+                            <div class="col-md-3">
+                                <label class="form-label">Setor</label>
+                                <div class="input-group">
+                                    <select class="form-select" name="contato_setor[]">
+                                        <option value="">Selecione...</option>
+                                        {% for s in setores %}
+                                            <option value="{{ s.nome }}">{{ s.nome }}</option>
+                                        {% endfor %}
+                                    </select>
+                                    <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#modalSetor">
+                                        <i class="bi bi-plus-circle"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Salvar Cliente
+                        </button>
+                        <a href="{{ url_for('clientes') }}" class="btn btn-outline-secondary">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para adicionar setor -->
+<div class="modal fade" id="modalSetor" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('setores_novo') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Novo Setor</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label for="setor_nome" class="form-label">Nome do setor</label>
+                    <input type="text" class="form-control" id="setor_nome" name="setor_nome" placeholder="Ex: Engenharia Clínica" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal para adicionar região -->
+<div class="modal fade" id="modalRegiao" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <form method="POST" action="{{ url_for('regioes_novo') }}">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-plus-circle"></i> Nova Região</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <label for="regiao_nome" class="form-label">Nome da região</label>
+                    <input type="text" class="form-control" id="regiao_nome" name="regiao_nome" placeholder="Ex: 19" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Salvar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const contatosContainer = document.getElementById('contatosContainer');
+    const addContatoBtn = document.getElementById('addContatoBtn');
+    const setorOptions = `
+        <option value="">Selecione...</option>
+        {% for s in setores %}
+            <option value="{{ s.nome }}">{{ s.nome }}</option>
+        {% endfor %}
+    `;
+
+    addContatoBtn.addEventListener('click', () => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'row g-3 align-items-end mt-1';
+        wrapper.innerHTML = `
+            <div class="col-md-3">
+                <label class="form-label">Nome</label>
+                <input type="text" class="form-control" name="contato_nome[]">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-control" name="contato_email[]">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Telefone</label>
+                <input type="text" class="form-control" name="contato_telefone[]">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">Cargo (opcional)</label>
+                <input type="text" class="form-control" name="contato_cargo[]">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Setor</label>
+                <div class="input-group">
+                    <select class="form-select" name="contato_setor[]">
+                        ${setorOptions}
+                    </select>
+                    <button class="btn btn-outline-secondary" type="button" data-bs-toggle="modal" data-bs-target="#modalSetor">
+                        <i class="bi bi-plus-circle"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="col-md-1 d-grid">
+                <button type="button" class="btn btn-outline-danger btn-sm remove-contato">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </div>
+        `;
+        wrapper.querySelector('.remove-contato').addEventListener('click', () => {
+            wrapper.remove();
+        });
+        contatosContainer.appendChild(wrapper);
+    });
+</script>
+{% endblock %}
