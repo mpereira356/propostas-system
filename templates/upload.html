@@ -14,20 +14,21 @@
             <div class="card-body">
                 <div class="alert alert-info">
                     <i class="bi bi-info-circle"></i>
-                    <strong>Instruções:</strong> Selecione um arquivo PDF de proposta comercial para importar. 
+                    <strong>Instruções:</strong> Selecione um ou mais arquivos PDF de proposta comercial para importar. 
                     O sistema irá extrair automaticamente todos os dados e salvar no banco de dados.
                 </div>
 
                 <form method="POST" enctype="multipart/form-data" id="uploadForm">
                     <div class="mb-4">
                         <label for="pdf_file" class="form-label">
-                            <strong>Selecione o arquivo PDF:</strong>
+                            <strong>Selecione o(s) arquivo(s) PDF:</strong>
                         </label>
                         <input type="file" 
                                class="form-control form-control-lg" 
                                id="pdf_file" 
-                               name="pdf_file" 
+                               name="pdf_files" 
                                accept=".pdf"
+                               multiple
                                required>
                         <div class="form-text">
                             Apenas arquivos PDF são aceitos. Tamanho máximo: 16MB
@@ -36,7 +37,7 @@
 
                     <div class="d-grid gap-2">
                         <button type="submit" class="btn btn-primary btn-lg" id="btnSubmit">
-                            <i class="bi bi-cloud-upload"></i> Importar Proposta
+                            <i class="bi bi-cloud-upload"></i> Importar Propostas
                         </button>
                     </div>
                 </form>
@@ -92,9 +93,9 @@
 <script>
     // Mostrar nome do arquivo selecionado
     document.getElementById('pdf_file').addEventListener('change', function(e) {
-        const fileName = e.target.files[0]?.name;
-        if (fileName) {
-            console.log('Arquivo selecionado:', fileName);
+        const files = Array.from(e.target.files || []);
+        if (files.length) {
+            console.log('Arquivos selecionados:', files.map(f => f.name).join(', '));
         }
     });
 

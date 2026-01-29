@@ -81,6 +81,7 @@
                                 <th>Data Vencimento</th>
                                 <th>Cod Vendedor</th>
                                 <th>Status</th>
+                                <th>Observações</th>
                                 <th class="text-center">Ações</th>
                             </tr>
                         </thead>
@@ -114,6 +115,16 @@
                                     {% else %}
                                         <span class="badge text-bg-success">Válida</span>
                                     {% endif %}
+                                </td>
+                                <td>
+                                    <form method="POST" action="{{ url_for('atualizar_observacoes', id=proposta.id) }}">
+                                        <select name="observacoes" class="form-select form-select-sm" onchange="this.form.submit()">
+                                            <option value="">Selecione</option>
+                                            <option value="Proposta ganha" {% if proposta.observacoes == 'Proposta ganha' %}selected{% endif %}>Proposta ganha</option>
+                                            <option value="Proposta perdida" {% if proposta.observacoes == 'Proposta perdida' %}selected{% endif %}>Proposta perdida</option>
+                                            <option value="Proposta em aberto" {% if proposta.observacoes == 'Proposta em aberto' %}selected{% endif %}>Proposta em aberto</option>
+                                        </select>
+                                    </form>
                                 </td>
                                 <td class="text-center">
                                     <a href="{{ url_for('detalhes', id=proposta.id) }}" 

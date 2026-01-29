@@ -34,6 +34,7 @@ class Proposta(db.Model):
     treinamento_status = db.Column(db.String(30))
     garantia_resumo = db.Column(db.Text)
     garantia_texto = db.Column(db.Text)
+    observacoes = db.Column(db.String(30))
     data_importacao = db.Column(db.DateTime, default=datetime.now)
     
     # Relacionamento com itens
@@ -67,6 +68,7 @@ class Proposta(db.Model):
             'treinamento_status': self.treinamento_status,
             'garantia_resumo': self.garantia_resumo,
             'garantia_texto': self.garantia_texto,
+            'observacoes': self.observacoes,
             'data_importacao': self.data_importacao.strftime('%d/%m/%Y %H:%M:%S') if self.data_importacao else None
         }
 
