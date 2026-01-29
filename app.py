@@ -4,6 +4,8 @@ Aplicação Flask para gerenciamento de propostas comerciais
 import os
 import io
 import re
+import threading
+from queue import Queue
 from datetime import datetime, timedelta, date
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file, send_from_directory
 from werkzeug.utils import secure_filename
@@ -23,6 +25,107 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
+app.config['MAX_FILES_PER_UPLOAD'] = 10
+
+upload_queue = Queue()
+
+
+def process_pdf(filepath, filename_original, filename):
+    try:
+        extractor = PropostaExtractor(filepath)
+        dados = extractor.extract_all()
+        if not dados or not dados.get('id_proposta'):
+            print(f"Falha ao extrair dados do PDF: {filename_original}")
+            return
+
+        cod_vendedor = extract_cod_from_filename(filename_original)
+        data_emissao_date = parse_date_br(dados.get('data_emissao'))
+        data_vencimento = data_emissao_date + timedelta(days=30) if data_emissao_date else None
+
+        proposta_existente = Proposta.query.filter_by(
+            id_proposta=dados['id_proposta']
+        ).first()
+
+        if proposta_existente:
+            print(f"Proposta já importada: {dados['id_proposta']}")
+            return
+
+        proposta = Proposta(
+            razao_social=dados.get('razao_social'),
+            nome_fantasia=dados.get('nome_fantasia'),
+            id_proposta=dados.get('id_proposta'),
+            data_emissao=dados.get('data_emissao'),
+            validade=dados.get('validade'),
+            cnpj=dados.get('cnpj'),
+            telefone=dados.get('telefone'),
+            celular=dados.get('celular'),
+            email=dados.get('email'),
+            pessoa_contato=dados.get('pessoa_contato'),
+            descricao_item=dados.get('descricao_item'),
+            quantidade=dados.get('quantidade'),
+            valor_total=dados.get('valor_total'),
+            nome_arquivo_pdf=filename,
+            cod_vendedor=cod_vendedor,
+            data_vencimento=data_vencimento,
+            instalacao_status=dados.get('instalacao_status'),
+            qualificacoes_status=dados.get('qualificacoes_status'),
+            treinamento_status=dados.get('treinamento_status'),
+            garantia_resumo=dados.get('garantia_resumo'),
+            garantia_texto=dados.get('garantia_texto'),
+            observacoes='Em negociação'
+        )
+        base_id, versao = split_proposta_id(dados.get('id_proposta'))
+        proposta.id_proposta_base = base_id
+        proposta.versao = versao
+
+        db.session.add(proposta)
+        db.session.flush()
+
+        for item_data in dados.get('itens', []):
+            item = ItemProposta(
+                proposta_id=proposta.id,
+                numero=item_data.get('numero'),
+                descricao=item_data.get('descricao'),
+                quantidade=item_data.get('quantidade'),
+                valor_unitario=item_data.get('valor_unitario'),
+                valor_total=item_data.get('valor_total')
+            )
+            db.session.add(item)
+
+        cnpj = dados.get('cnpj')
+        if cnpj:
+            cnpj_normalizado = normalize_cnpj(cnpj)
+            cliente_existente = Cliente.query.filter(
+                (Cliente.cnpj == cnpj) | (Cliente.cnpj_normalizado == cnpj_normalizado)
+            ).first()
+            if not cliente_existente:
+                nome_cliente = dados.get('razao_social') or dados.get('nome_fantasia') or 'Cliente sem nome'
+                cliente = Cliente(
+                    nome=nome_cliente,
+                    cnpj=cnpj,
+                    cnpj_normalizado=cnpj_normalizado
+                )
+                db.session.add(cliente)
+
+        db.session.commit()
+    except Exception as e:
+        db.session.rollback()
+        print(f"Erro ao processar PDF ({filename_original}): {e}")
+
+
+def upload_worker():
+    while True:
+        item = upload_queue.get()
+        if item is None:
+            break
+        filepath, filename_original, filename = item
+        with app.app_context():
+            process_pdf(filepath, filename_original, filename)
+        upload_queue.task_done()
+
+
+worker_thread = threading.Thread(target=upload_worker, daemon=True)
+worker_thread.start()
 
 def parse_date_br(date_str):
     """Converte data no formato dd/mm/aaaa para datetime.date."""
@@ -201,117 +304,29 @@ def upload():
             flash('Nenhum arquivo foi selecionado', 'error')
             return redirect(request.url)
 
-        def process_file(file_obj):
+        if len(files) > app.config['MAX_FILES_PER_UPLOAD']:
+            flash(f'Limite de {app.config["MAX_FILES_PER_UPLOAD"]} PDFs por envio.', 'error')
+            return redirect(request.url)
+
+        enfileirados = 0
+        for file_obj in files:
+            if file_obj.filename == '':
+                continue
             if not allowed_file(file_obj.filename):
-                return {'status': 'error', 'message': f'Apenas arquivos PDF são permitidos: {file_obj.filename}'}
+                flash(f'Apenas arquivos PDF são permitidos: {file_obj.filename}', 'error')
+                continue
 
             filename_original = file_obj.filename
             filename = secure_filename(filename_original)
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file_obj.save(filepath)
+            upload_queue.put((filepath, filename_original, filename))
+            enfileirados += 1
 
-            try:
-                extractor = PropostaExtractor(filepath)
-                dados = extractor.extract_all()
-                if not dados or not dados.get('id_proposta'):
-                    return {'status': 'error', 'message': f'Não foi possível extrair dados do PDF: {filename_original}'}
-
-                cod_vendedor = extract_cod_from_filename(filename_original)
-                data_emissao_date = parse_date_br(dados.get('data_emissao'))
-                data_vencimento = data_emissao_date + timedelta(days=30) if data_emissao_date else None
-
-                proposta_existente = Proposta.query.filter_by(
-                    id_proposta=dados['id_proposta']
-                ).first()
-
-                if proposta_existente:
-                    return {
-                        'status': 'warning',
-                        'message': f'Proposta {dados["id_proposta"]} já foi importada anteriormente!',
-                        'proposta_id': proposta_existente.id
-                    }
-
-                proposta = Proposta(
-                    razao_social=dados.get('razao_social'),
-                    nome_fantasia=dados.get('nome_fantasia'),
-                    id_proposta=dados.get('id_proposta'),
-                    data_emissao=dados.get('data_emissao'),
-                    validade=dados.get('validade'),
-                    cnpj=dados.get('cnpj'),
-                    telefone=dados.get('telefone'),
-                    celular=dados.get('celular'),
-                    email=dados.get('email'),
-                    pessoa_contato=dados.get('pessoa_contato'),
-                    descricao_item=dados.get('descricao_item'),
-                    quantidade=dados.get('quantidade'),
-                    valor_total=dados.get('valor_total'),
-                    nome_arquivo_pdf=filename,
-                    cod_vendedor=cod_vendedor,
-                    data_vencimento=data_vencimento,
-                    instalacao_status=dados.get('instalacao_status'),
-                    qualificacoes_status=dados.get('qualificacoes_status'),
-                    treinamento_status=dados.get('treinamento_status'),
-                    garantia_resumo=dados.get('garantia_resumo'),
-                    garantia_texto=dados.get('garantia_texto'),
-                    observacoes='Em negociação'
-                )
-                base_id, versao = split_proposta_id(dados.get('id_proposta'))
-                proposta.id_proposta_base = base_id
-                proposta.versao = versao
-
-                db.session.add(proposta)
-                db.session.flush()
-
-                for item_data in dados.get('itens', []):
-                    item = ItemProposta(
-                        proposta_id=proposta.id,
-                        numero=item_data.get('numero'),
-                        descricao=item_data.get('descricao'),
-                        quantidade=item_data.get('quantidade'),
-                        valor_unitario=item_data.get('valor_unitario'),
-                        valor_total=item_data.get('valor_total')
-                    )
-                    db.session.add(item)
-
-                cnpj = dados.get('cnpj')
-                if cnpj:
-                    cnpj_normalizado = normalize_cnpj(cnpj)
-                    cliente_existente = Cliente.query.filter(
-                        (Cliente.cnpj == cnpj) | (Cliente.cnpj_normalizado == cnpj_normalizado)
-                    ).first()
-                    if not cliente_existente:
-                        nome_cliente = dados.get('razao_social') or dados.get('nome_fantasia') or 'Cliente sem nome'
-                        cliente = Cliente(
-                            nome=nome_cliente,
-                            cnpj=cnpj,
-                            cnpj_normalizado=cnpj_normalizado
-                        )
-                        db.session.add(cliente)
-
-                db.session.commit()
-                return {
-                    'status': 'success',
-                    'message': f'Proposta {dados["id_proposta"]} importada com sucesso!',
-                    'proposta_id': proposta.id
-                }
-            except Exception as e:
-                db.session.rollback()
-                return {'status': 'error', 'message': f'Erro ao processar PDF ({filename_original}): {str(e)}'}
-
-        if len(files) == 1:
-            resultado = process_file(files[0])
-            flash(resultado['message'], resultado['status'])
-            if resultado['status'] == 'success' and resultado.get('proposta_id'):
-                return redirect(url_for('detalhes', id=resultado['proposta_id']))
-            if resultado['status'] == 'warning' and resultado.get('proposta_id'):
-                return redirect(url_for('detalhes', id=resultado['proposta_id']))
-            return redirect(request.url)
-
-        for file_obj in files:
-            if file_obj.filename == '':
-                continue
-            resultado = process_file(file_obj)
-            flash(resultado['message'], resultado['status'])
+        if enfileirados:
+            flash(f'{enfileirados} PDF(s) enviados para processamento em background.', 'success')
+        else:
+            flash('Nenhum PDF válido foi enviado.', 'warning')
 
         return redirect(url_for('listagem'))
     

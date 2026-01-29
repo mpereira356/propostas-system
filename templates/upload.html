@@ -15,7 +15,7 @@
                 <div class="alert alert-info">
                     <i class="bi bi-info-circle"></i>
                     <strong>Instruções:</strong> Selecione um ou mais arquivos PDF de proposta comercial para importar. 
-                    O sistema irá extrair automaticamente todos os dados e salvar no banco de dados.
+                    O sistema irá processar em segundo plano e salvar os dados automaticamente.
                 </div>
 
                 <form method="POST" enctype="multipart/form-data" id="uploadForm">
@@ -31,7 +31,7 @@
                                multiple
                                required>
                         <div class="form-text">
-                            Apenas arquivos PDF são aceitos. Tamanho máximo: 16MB
+                            Apenas arquivos PDF são aceitos. Tamanho máximo: 16MB | Limite por envio: 10 PDFs
                         </div>
                     </div>
 
