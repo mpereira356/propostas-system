@@ -260,8 +260,14 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if proposta.observacoes == 'Proposta ganha' %}
-                                        <strong class="text-success">Proposta ganha</strong>
+                                    {% if proposta.observacoes %}
+                                        {% if proposta.observacoes == 'Proposta ganha' %}
+                                            <strong class="text-success">Proposta ganha</strong>
+                                        {% elif proposta.observacoes == 'Proposta perdida' %}
+                                            <strong class="text-danger">Proposta perdida</strong>
+                                        {% else %}
+                                            <strong class="text-warning">Proposta em aberto</strong>
+                                        {% endif %}
                                     {% else %}
                                         <form method="POST" action="{{ url_for('atualizar_observacoes', id=proposta.id) }}">
                                             <select name="observacoes"
