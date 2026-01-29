@@ -294,7 +294,7 @@
                     barWrap.style.display = 'block';
                     bar.style.width = `${data.percent}%`;
                     bar.textContent = `${data.percent}%`;
-                } else if (data.total > 0 && data.pending === 0) {
+                } else if (data.completed) {
                     barWrap.style.display = 'block';
                     bar.style.width = '100%';
                     bar.textContent = '100%';

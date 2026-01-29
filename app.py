@@ -483,15 +483,21 @@ def listagem():
 def upload_status():
     """Status da fila de importação"""
     with upload_lock:
+        global upload_total, upload_done
         total = upload_total
         done = upload_done
-    pending = max(total - done, 0)
+        pending = max(total - done, 0)
+        if total and pending == 0:
+            # Reset to avoid oscillating progress bar after completion
+            upload_total = 0
+            upload_done = 0
     percent = int((done / total) * 100) if total else 0
     return jsonify({
         'total': total,
         'done': done,
         'pending': pending,
-        'percent': percent
+        'percent': percent,
+        'completed': True if total and pending == 0 else False
     })
 
 
