@@ -259,6 +259,7 @@
                                     {% endif %}
                                 </td>
                                 <td class="text-center">
+                                    {% if proposta.observacoes != 'Vencida' %}
                                     <form method="POST" action="{{ url_for('atualizar_observacoes', id=proposta.id) }}" class="d-inline">
                                         <input type="hidden" name="observacoes" value="Em negociação">
                                         <button type="submit" class="btn btn-sm btn-outline-secondary" title="Em negociação">
@@ -277,6 +278,7 @@
                                             <i class="bi bi-x-circle"></i>
                                         </button>
                                     </form>
+                                    {% endif %}
                                     <a href="{{ url_for('detalhes', id=proposta.id) }}" 
                                        class="btn btn-sm btn-action-view"
                                        title="Ver detalhes">
