@@ -28,6 +28,9 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 app.config['MAX_FILES_PER_UPLOAD'] = 10
 
 upload_queue = Queue()
+upload_lock = threading.Lock()
+upload_total = 0
+upload_done = 0
 
 
 def process_pdf(filepath, filename_original, filename):
@@ -121,6 +124,9 @@ def upload_worker():
         filepath, filename_original, filename = item
         with app.app_context():
             process_pdf(filepath, filename_original, filename)
+        with upload_lock:
+            global upload_done
+            upload_done += 1
         upload_queue.task_done()
 
 
@@ -324,6 +330,11 @@ def upload():
             enfileirados += 1
 
         if enfileirados:
+            with upload_lock:
+                global upload_total, upload_done
+                upload_total += enfileirados
+
+        if enfileirados:
             flash(f'{enfileirados} PDF(s) enviados para processamento em background.', 'success')
         else:
             flash('Nenhum PDF válido foi enviado.', 'warning')
@@ -466,6 +477,22 @@ def listagem():
                          total_perdidas=total_perdidas,
                          total_abertas=total_abertas,
                          total_vencidas_dashboard=total_vencidas_dashboard)
+
+
+@app.route('/api/upload_status')
+def upload_status():
+    """Status da fila de importação"""
+    with upload_lock:
+        total = upload_total
+        done = upload_done
+    pending = max(total - done, 0)
+    percent = int((done / total) * 100) if total else 0
+    return jsonify({
+        'total': total,
+        'done': done,
+        'pending': pending,
+        'percent': percent
+    })
 
 
 @app.route('/clientes')
