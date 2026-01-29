@@ -160,30 +160,7 @@ def allowed_file(filename):
 @app.route('/')
 def index():
     """Página principal - redireciona para upload"""
-    return redirect(url_for('dashboard'))
-
-
-@app.route('/dashboard')
-def dashboard():
-    """Dashboard com indicadores de propostas"""
-    hoje = date.today()
-    total_propostas = Proposta.query.count()
-    total_ganhas = Proposta.query.filter_by(observacoes='Proposta ganha').count()
-    total_perdidas = Proposta.query.filter_by(observacoes='Proposta perdida').count()
-    total_abertas = Proposta.query.filter_by(observacoes='Proposta em aberto').count()
-    total_vencidas = Proposta.query.filter(
-        Proposta.data_vencimento.isnot(None),
-        Proposta.data_vencimento < hoje
-    ).count()
-
-    return render_template(
-        'dashboard.html',
-        total_propostas=total_propostas,
-        total_ganhas=total_ganhas,
-        total_perdidas=total_perdidas,
-        total_abertas=total_abertas,
-        total_vencidas=total_vencidas
-    )
+    return redirect(url_for('listagem'))
 
 
 @app.route('/upload', methods=['GET', 'POST'])
@@ -390,6 +367,15 @@ def listagem():
 
     if alterou:
         db.session.commit()
+
+    total_propostas = Proposta.query.count()
+    total_ganhas = Proposta.query.filter_by(observacoes='Proposta ganha').count()
+    total_perdidas = Proposta.query.filter_by(observacoes='Proposta perdida').count()
+    total_abertas = Proposta.query.filter_by(observacoes='Proposta em aberto').count()
+    total_vencidas_dashboard = Proposta.query.filter(
+        Proposta.data_vencimento.isnot(None),
+        Proposta.data_vencimento < hoje
+    ).count()
     
     return render_template('listagem.html', 
                          propostas=propostas,
@@ -399,7 +385,12 @@ def listagem():
                              'id_proposta': id_proposta,
                              'cod_vendedor': cod_vendedor
                          },
-                         total_vencidas=total_vencidas)
+                         total_vencidas=total_vencidas,
+                         total_propostas=total_propostas,
+                         total_ganhas=total_ganhas,
+                         total_perdidas=total_perdidas,
+                         total_abertas=total_abertas,
+                         total_vencidas_dashboard=total_vencidas_dashboard)
 
 
 @app.route('/clientes')

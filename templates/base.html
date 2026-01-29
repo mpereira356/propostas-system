@@ -102,9 +102,6 @@
                 Sistema de Propostas
             </a>
             <nav class="nav flex-column">
-                <a class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
-                    <i class="bi bi-speedometer2"></i> Dashboard
-                </a>
                 <a class="nav-link {% if request.endpoint == 'upload' %}active{% endif %}" href="{{ url_for('upload') }}">
                     <i class="bi bi-upload"></i> Importar PDF
                 </a>

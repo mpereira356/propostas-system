@@ -15,6 +15,84 @@
                 </a>
             </div>
             <div class="card-body">
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3">
+                        <div class="card border-0 h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <p class="text-muted mb-1">Total de propostas</p>
+                                        <h4 class="mb-0">{{ total_propostas }}</h4>
+                                    </div>
+                                    <div class="fs-3 text-primary">
+                                        <i class="bi bi-collection"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <p class="text-muted mb-1">Propostas ganhas</p>
+                                        <h4 class="mb-0 text-success">{{ total_ganhas }}</h4>
+                                    </div>
+                                    <div class="fs-3 text-success">
+                                        <i class="bi bi-check-circle"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <p class="text-muted mb-1">Propostas perdidas</p>
+                                        <h4 class="mb-0 text-danger">{{ total_perdidas }}</h4>
+                                    </div>
+                                    <div class="fs-3 text-danger">
+                                        <i class="bi bi-x-circle"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <p class="text-muted mb-1">Propostas em aberto</p>
+                                        <h4 class="mb-0 text-warning">{{ total_abertas }}</h4>
+                                    </div>
+                                    <div class="fs-3 text-warning">
+                                        <i class="bi bi-hourglass-split"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card border-0 h-100">
+                            <div class="card-body">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        <p class="text-muted mb-1">Propostas vencidas</p>
+                                        <h4 class="mb-0 text-danger">{{ total_vencidas_dashboard }}</h4>
+                                    </div>
+                                    <div class="fs-3 text-danger">
+                                        <i class="bi bi-exclamation-triangle"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Filtros -->
                 <form method="GET" class="row g-3 mb-4">
                     <div class="col-md-4">
