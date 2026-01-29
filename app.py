@@ -366,11 +366,12 @@ def listagem():
             elif proposta.data_vencimento <= limite_vencendo:
                 proposta.vencendo = True
 
-        if not proposta.observacoes:
+        if proposta.vencida:
+            if proposta.observacoes != 'Proposta vencida':
+                proposta.observacoes = 'Proposta vencida'
+                alterou = True
+        elif not proposta.observacoes:
             proposta.observacoes = 'Proposta em aberto'
-            alterou = True
-        elif proposta.vencida and proposta.observacoes != 'Proposta ganha':
-            proposta.observacoes = 'Proposta vencida'
             alterou = True
 
     if alterou:
