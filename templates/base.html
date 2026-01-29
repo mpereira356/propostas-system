@@ -10,8 +10,27 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     
     <style>
+        :root {
+            --corporate-blue: #1F3A5F;
+            --corporate-blue-dark: #16263D;
+            --bg-light: #F4F6F9;
+            --border-gray: #D1D5DB;
+            --text-dark: #1F2933;
+            --text-muted: #374151;
+            --white: #FFFFFF;
+            --placeholder: #9CA3AF;
+            --table-head-bg: #1F2933;
+            --table-head-border: #374151;
+            --table-row: #FFFFFF;
+            --table-row-alt: #F9FAFB;
+            --table-row-hover: #EEF2F7;
+            --badge-danger: #B91C1C;
+            --badge-success: #15803D;
+            --badge-warning: #D97706;
+        }
         body {
-            background-color: #f3f5f9;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
         }
         .app-shell {
             min-height: 100vh;
@@ -20,7 +39,7 @@
         }
         .sidebar {
             width: 260px;
-            background: linear-gradient(180deg, #212529 0%, #111418 100%);
+            background: var(--corporate-blue-dark);
             color: #fff;
             position: fixed;
             top: 0;
@@ -67,28 +86,63 @@
             }
         }
         .card {
-            box-shadow: 0 0 10px rgba(0,0,0,.1);
-            border: none;
+            background-color: var(--white);
+            box-shadow: 0 0 10px rgba(0,0,0,.08);
+            border: 1px solid var(--border-gray);
+            border-radius: 12px;
         }
         .btn-primary {
-            background-color: #0d6efd;
-            border-color: #0d6efd;
+            background-color: var(--corporate-blue);
+            border-color: var(--corporate-blue);
         }
         .btn-primary:hover {
-            background-color: #0b5ed7;
-            border-color: #0a58ca;
+            background-color: #274C77;
+            border-color: #274C77;
         }
         .alert {
-            border-radius: 8px;
+            border-radius: 10px;
         }
         .table {
-            background-color: white;
+            background-color: var(--white);
+        }
+        .form-label {
+            color: var(--text-muted);
+            font-weight: 600;
+        }
+        .form-control,
+        .form-select {
+            border-color: var(--border-gray);
+            color: #111827;
+        }
+        .form-control::placeholder {
+            color: var(--placeholder);
         }
         footer {
             margin-top: 50px;
             padding: 20px 0;
-            background-color: #343a40;
-            color: white;
+            background-color: var(--corporate-blue-dark);
+            color: #E5E7EB;
+        }
+        .table thead.table-dark th {
+            background-color: var(--table-head-bg);
+            color: #fff;
+            border-bottom: 1px solid var(--table-head-border);
+        }
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: var(--table-row-alt);
+        }
+        .table-hover tbody tr:hover {
+            background-color: var(--table-row-hover);
+        }
+        .badge.text-bg-danger {
+            background-color: var(--badge-danger);
+        }
+        .badge.text-bg-success {
+            background-color: var(--badge-success);
+        }
+        .badge.warning {
+            background-color: var(--badge-warning);
+            color: #fff;
         }
     </style>
     

@@ -2,15 +2,78 @@
 
 {% block title %}Listagem de Propostas - Sistema de Propostas{% endblock %}
 
+{% block extra_css %}
+<style>
+    .listagem-header {
+        background-color: #16263D;
+        color: #FFFFFF;
+    }
+    .listagem-header .btn-nova-importacao {
+        background-color: #1F3A5F;
+        border-color: #1F3A5F;
+        color: #FFFFFF;
+    }
+    .listagem-header .btn-nova-importacao:hover {
+        background-color: #274C77;
+        border-color: #274C77;
+        color: #FFFFFF;
+    }
+    .btn-filtrar {
+        background-color: #1F3A5F;
+        border-color: #1F3A5F;
+        color: #FFFFFF;
+    }
+    .btn-filtrar:hover {
+        background-color: #274C77;
+        border-color: #274C77;
+        color: #FFFFFF;
+    }
+    .badge-vencendo {
+        background-color: #D97706;
+        color: #FFFFFF;
+    }
+    .btn-action-view {
+        background-color: #1F3A5F;
+        border-color: #1F3A5F;
+        color: #FFFFFF;
+    }
+    .btn-action-view:hover {
+        background-color: #1a2f4d;
+        border-color: #1a2f4d;
+        color: #FFFFFF;
+    }
+    .btn-action-edit {
+        background-color: #D97706;
+        border-color: #D97706;
+        color: #FFFFFF;
+    }
+    .btn-action-edit:hover {
+        background-color: #bf6905;
+        border-color: #bf6905;
+        color: #FFFFFF;
+    }
+    .btn-action-delete {
+        background-color: #B91C1C;
+        border-color: #B91C1C;
+        color: #FFFFFF;
+    }
+    .btn-action-delete:hover {
+        background-color: #a01818;
+        border-color: #a01818;
+        color: #FFFFFF;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row">
     <div class="col-12">
         <div class="card">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <div class="card-header listagem-header d-flex justify-content-between align-items-center">
                 <h4 class="mb-0">
                     <i class="bi bi-list-ul"></i> Propostas Importadas
                 </h4>
-                <a href="{{ url_for('upload') }}" class="btn btn-light btn-sm">
+                <a href="{{ url_for('upload') }}" class="btn btn-nova-importacao btn-sm">
                     <i class="bi bi-plus-circle"></i> Nova Importação
                 </a>
             </div>
@@ -132,7 +195,7 @@
                                placeholder="016">
                     </div>
                     <div class="col-md-2 d-flex align-items-end">
-                        <button type="submit" class="btn btn-primary w-100">
+                        <button type="submit" class="btn btn-filtrar w-100">
                             <i class="bi bi-search"></i> Filtrar
                         </button>
                     </div>
@@ -189,7 +252,7 @@
                                     {% if proposta.vencida %}
                                         <span class="badge text-bg-danger">Vencida</span>
                                     {% elif proposta.vencendo %}
-                                        <span class="badge" style="background-color:#fd7e14;">Vencendo</span>
+                                        <span class="badge badge-vencendo">Vencendo</span>
                                     {% else %}
                                         <span class="badge text-bg-success">Válida</span>
                                     {% endif %}
@@ -206,17 +269,17 @@
                                 </td>
                                 <td class="text-center">
                                     <a href="{{ url_for('detalhes', id=proposta.id) }}" 
-                                       class="btn btn-sm btn-info text-white"
+                                       class="btn btn-sm btn-action-view"
                                        title="Ver detalhes">
                                         <i class="bi bi-eye"></i>
                                     </a>
                                     <a href="{{ url_for('editar', id=proposta.id) }}"
-                                       class="btn btn-sm btn-warning text-dark"
+                                       class="btn btn-sm btn-action-edit"
                                        title="Editar">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
                                     <button type="button" 
-                                            class="btn btn-sm btn-danger"
+                                            class="btn btn-sm btn-action-delete"
                                             onclick="confirmarDelete({{ proposta.id }}, '{{ proposta.id_proposta }}')"
                                             title="Deletar">
                                         <i class="bi bi-trash"></i>
