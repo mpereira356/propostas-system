@@ -232,7 +232,7 @@
                                 <td>
                                     <strong>{{ proposta.id_proposta or 'N/A' }}</strong>
                                     {% if grupo.versions %}
-                                        <button class="btn btn-sm btn-outline-secondary ms-2"
+                                        <button class="btn btn-sm btn-outline-secondary ms-2 toggle-versoes"
                                                 type="button"
                                                 data-bs-toggle="collapse"
                                                 data-bs-target="#versoes-{{ proposta.id }}"
@@ -455,5 +455,27 @@
         const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
         modal.show();
     }
+
+    document.querySelectorAll('.toggle-versoes').forEach((btn) => {
+        const targetSelector = btn.getAttribute('data-bs-target');
+        const target = document.querySelector(targetSelector);
+        if (!target) return;
+
+        target.addEventListener('shown.bs.collapse', () => {
+            const icon = btn.querySelector('i');
+            if (icon) {
+                icon.classList.remove('bi-caret-down-fill');
+                icon.classList.add('bi-caret-up-fill');
+            }
+        });
+
+        target.addEventListener('hidden.bs.collapse', () => {
+            const icon = btn.querySelector('i');
+            if (icon) {
+                icon.classList.remove('bi-caret-up-fill');
+                icon.classList.add('bi-caret-down-fill');
+            }
+        });
+    });
 </script>
 {% endblock %}
