@@ -206,10 +206,10 @@ def upload():
                         'proposta_id': proposta_existente.id
                     }
 
-                proposta = Proposta(
-                    razao_social=dados.get('razao_social'),
-                    nome_fantasia=dados.get('nome_fantasia'),
-                    id_proposta=dados.get('id_proposta'),
+                    proposta = Proposta(
+                        razao_social=dados.get('razao_social'),
+                        nome_fantasia=dados.get('nome_fantasia'),
+                        id_proposta=dados.get('id_proposta'),
                     data_emissao=dados.get('data_emissao'),
                     validade=dados.get('validade'),
                     cnpj=dados.get('cnpj'),
@@ -225,10 +225,11 @@ def upload():
                     data_vencimento=data_vencimento,
                     instalacao_status=dados.get('instalacao_status'),
                     qualificacoes_status=dados.get('qualificacoes_status'),
-                    treinamento_status=dados.get('treinamento_status'),
-                    garantia_resumo=dados.get('garantia_resumo'),
-                    garantia_texto=dados.get('garantia_texto')
-                )
+                        treinamento_status=dados.get('treinamento_status'),
+                        garantia_resumo=dados.get('garantia_resumo'),
+                        garantia_texto=dados.get('garantia_texto'),
+                        observacoes='Proposta em aberto'
+                    )
 
                 db.session.add(proposta)
                 db.session.flush()
@@ -364,6 +365,13 @@ def listagem():
                 total_vencidas += 1
             elif proposta.data_vencimento <= limite_vencendo:
                 proposta.vencendo = True
+
+        if not proposta.observacoes:
+            proposta.observacoes = 'Proposta em aberto'
+            alterou = True
+        elif proposta.vencida and proposta.observacoes != 'Proposta ganha':
+            proposta.observacoes = 'Proposta vencida'
+            alterou = True
 
     if alterou:
         db.session.commit()

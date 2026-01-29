@@ -228,7 +228,7 @@
                         </thead>
                         <tbody>
                             {% for proposta in propostas %}
-                            <tr class="{% if proposta.vencida %}table-danger{% elif proposta.vencendo %}table-warning{% endif %}">
+                            <tr class="{% if proposta.observacoes in ['Proposta perdida', 'Proposta vencida'] %}table-danger{% elif proposta.observacoes == 'Proposta ganha' %}table-success{% else %}{% endif %}">
                                 <td>
                                     <strong>{{ proposta.id_proposta or 'N/A' }}</strong>
                                 </td>
@@ -251,12 +251,12 @@
                                 <td>
                                     {% if proposta.observacoes == 'Proposta ganha' %}
                                         <span class="badge text-bg-success">Proposta ganha</span>
-                                    {% elif proposta.vencida %}
-                                        <span class="badge text-bg-danger">Vencida</span>
-                                    {% elif proposta.vencendo %}
-                                        <span class="badge badge-vencendo">Vencendo</span>
+                                    {% elif proposta.observacoes == 'Proposta perdida' %}
+                                        <span class="badge text-bg-danger">Proposta perdida</span>
+                                    {% elif proposta.observacoes == 'Proposta vencida' %}
+                                        <span class="badge text-bg-danger">Proposta vencida</span>
                                     {% else %}
-                                        <span class="badge text-bg-success">Válida</span>
+                                        <span class="badge badge-vencendo">Proposta em aberto</span>
                                     {% endif %}
                                 </td>
                                 <td>
@@ -265,6 +265,8 @@
                                             <strong class="text-success">Proposta ganha</strong>
                                         {% elif proposta.observacoes == 'Proposta perdida' %}
                                             <strong class="text-danger">Proposta perdida</strong>
+                                        {% elif proposta.observacoes == 'Proposta vencida' %}
+                                            <strong class="text-danger">Proposta vencida</strong>
                                         {% else %}
                                             <strong class="text-warning">Proposta em aberto</strong>
                                         {% endif %}
@@ -273,10 +275,11 @@
                                             <select name="observacoes"
                                                     class="form-select form-select-sm"
                                                     onchange="this.form.submit()">
-                                                <option value="">Selecione</option>
+                                                <option value="Proposta em aberto" selected>Proposta em aberto</option>
                                                 <option value="Proposta ganha" {% if proposta.observacoes == 'Proposta ganha' %}selected{% endif %}>Proposta ganha</option>
                                                 <option value="Proposta perdida" {% if proposta.observacoes == 'Proposta perdida' %}selected{% endif %}>Proposta perdida</option>
                                                 <option value="Proposta em aberto" {% if proposta.observacoes == 'Proposta em aberto' %}selected{% endif %}>Proposta em aberto</option>
+                                                <option value="Proposta vencida" {% if proposta.observacoes == 'Proposta vencida' %}selected{% endif %}>Proposta vencida</option>
                                             </select>
                                         </form>
                                     {% endif %}
