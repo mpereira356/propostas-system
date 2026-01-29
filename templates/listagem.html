@@ -222,13 +222,12 @@
                                 <th>Data Vencimento</th>
                                 <th>Cod Vendedor</th>
                                 <th>Status</th>
-                                <th>Observações</th>
                                 <th class="text-center">Ações</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for proposta in propostas %}
-                            <tr class="{% if proposta.observacoes == 'Proposta vencida' %}table-danger{% elif proposta.observacoes == 'Proposta ganha' %}table-success{% else %}{% endif %}">
+                            <tr class="{% if proposta.observacoes == 'Vencida' %}table-danger{% elif proposta.observacoes == 'Ganha' %}table-success{% else %}{% endif %}">
                                 <td>
                                     <strong>{{ proposta.id_proposta or 'N/A' }}</strong>
                                 </td>
@@ -249,40 +248,35 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if proposta.observacoes == 'Proposta ganha' %}
-                                        <span class="badge text-bg-success">Proposta ganha</span>
-                                    {% elif proposta.observacoes == 'Proposta perdida' %}
-                                        <span class="badge text-bg-danger">Proposta perdida</span>
-                                    {% elif proposta.observacoes == 'Proposta vencida' %}
+                                    {% if proposta.observacoes == 'Ganha' %}
+                                        <span class="badge text-bg-success">Ganha</span>
+                                    {% elif proposta.observacoes == 'Perdida' %}
+                                        <span class="badge text-bg-danger">Perdida</span>
+                                    {% elif proposta.observacoes == 'Vencida' %}
                                         <span class="badge text-bg-danger">Vencida</span>
                                     {% else %}
-                                        <span class="badge badge-vencendo">Proposta em aberto</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if proposta.observacoes and proposta.observacoes != 'Proposta em aberto' %}
-                                        {% if proposta.observacoes == 'Proposta ganha' %}
-                                            <strong class="text-success">Proposta ganha</strong>
-                                        {% elif proposta.observacoes == 'Proposta perdida' %}
-                                            <strong class="text-danger">Proposta perdida</strong>
-                                        {% elif proposta.observacoes == 'Proposta vencida' %}
-                                            <strong class="text-danger">Proposta vencida</strong>
-                                        {% else %}
-                                            <strong class="text-warning">Proposta em aberto</strong>
-                                        {% endif %}
-                                    {% else %}
-                                        <form method="POST" action="{{ url_for('atualizar_observacoes', id=proposta.id) }}">
-                                            <select name="observacoes"
-                                                    class="form-select form-select-sm"
-                                                    onchange="this.form.submit()">
-                                                <option value="Proposta em aberto" selected>Proposta em aberto</option>
-                                                <option value="Proposta ganha">Proposta ganha</option>
-                                                <option value="Proposta perdida">Proposta perdida</option>
-                                            </select>
-                                        </form>
+                                        <span class="badge badge-vencendo">Em negociação</span>
                                     {% endif %}
                                 </td>
                                 <td class="text-center">
+                                    <form method="POST" action="{{ url_for('atualizar_observacoes', id=proposta.id) }}" class="d-inline">
+                                        <input type="hidden" name="observacoes" value="Em negociação">
+                                        <button type="submit" class="btn btn-sm btn-outline-secondary" title="Em negociação">
+                                            <i class="bi bi-arrow-repeat"></i>
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="{{ url_for('atualizar_observacoes', id=proposta.id) }}" class="d-inline">
+                                        <input type="hidden" name="observacoes" value="Ganha">
+                                        <button type="submit" class="btn btn-sm btn-action-view" title="Marcar como ganha">
+                                            <i class="bi bi-check-circle"></i>
+                                        </button>
+                                    </form>
+                                    <form method="POST" action="{{ url_for('atualizar_observacoes', id=proposta.id) }}" class="d-inline">
+                                        <input type="hidden" name="observacoes" value="Perdida">
+                                        <button type="submit" class="btn btn-sm btn-action-delete" title="Marcar como perdida">
+                                            <i class="bi bi-x-circle"></i>
+                                        </button>
+                                    </form>
                                     <a href="{{ url_for('detalhes', id=proposta.id) }}" 
                                        class="btn btn-sm btn-action-view"
                                        title="Ver detalhes">

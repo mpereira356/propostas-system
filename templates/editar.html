@@ -102,6 +102,21 @@
 
             <div class="card mb-4">
                 <div class="card-header bg-secondary text-white">
+                    <h5 class="mb-0"><i class="bi bi-flag"></i> Status da Proposta</h5>
+                </div>
+                <div class="card-body">
+                    <label class="form-label">Observações</label>
+                    <select class="form-select" name="observacoes">
+                        <option value="Em negociação" {% if proposta.observacoes == 'Em negociação' %}selected{% endif %}>Em negociação</option>
+                        <option value="Ganha" {% if proposta.observacoes == 'Ganha' %}selected{% endif %}>Ganha</option>
+                        <option value="Perdida" {% if proposta.observacoes == 'Perdida' %}selected{% endif %}>Perdida</option>
+                        <option value="Vencida" {% if proposta.observacoes == 'Vencida' %}selected{% endif %}>Vencida</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header bg-secondary text-white">
                     <h5 class="mb-0"><i class="bi bi-shield-check"></i> Garantia</h5>
                 </div>
                 <div class="card-body">
