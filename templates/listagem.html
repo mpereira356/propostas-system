@@ -260,17 +260,20 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    <form method="POST" action="{{ url_for('atualizar_observacoes', id=proposta.id) }}">
-                                        <select name="observacoes"
-                                                class="form-select form-select-sm"
-                                                onchange="this.form.submit()"
-                                                {% if proposta.observacoes == 'Proposta ganha' %}disabled{% endif %}>
-                                            <option value="">Selecione</option>
-                                            <option value="Proposta ganha" {% if proposta.observacoes == 'Proposta ganha' %}selected{% endif %}>Proposta ganha</option>
-                                            <option value="Proposta perdida" {% if proposta.observacoes == 'Proposta perdida' %}selected{% endif %}>Proposta perdida</option>
-                                            <option value="Proposta em aberto" {% if proposta.observacoes == 'Proposta em aberto' %}selected{% endif %}>Proposta em aberto</option>
-                                        </select>
-                                    </form>
+                                    {% if proposta.observacoes == 'Proposta ganha' %}
+                                        <strong class="text-success">Proposta ganha</strong>
+                                    {% else %}
+                                        <form method="POST" action="{{ url_for('atualizar_observacoes', id=proposta.id) }}">
+                                            <select name="observacoes"
+                                                    class="form-select form-select-sm"
+                                                    onchange="this.form.submit()">
+                                                <option value="">Selecione</option>
+                                                <option value="Proposta ganha" {% if proposta.observacoes == 'Proposta ganha' %}selected{% endif %}>Proposta ganha</option>
+                                                <option value="Proposta perdida" {% if proposta.observacoes == 'Proposta perdida' %}selected{% endif %}>Proposta perdida</option>
+                                                <option value="Proposta em aberto" {% if proposta.observacoes == 'Proposta em aberto' %}selected{% endif %}>Proposta em aberto</option>
+                                            </select>
+                                        </form>
+                                    {% endif %}
                                 </td>
                                 <td class="text-center">
                                     <a href="{{ url_for('detalhes', id=proposta.id) }}" 
