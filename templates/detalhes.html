@@ -65,7 +65,13 @@
                                 <th width="40%">Arquivo PDF:</th>
                                 <td>
                                     <i class="bi bi-file-pdf text-danger"></i> 
-                                    {{ proposta.nome_arquivo_pdf or 'N/A' }}
+                                    {% if proposta.nome_arquivo_pdf %}
+                                        <a href="{{ url_for('visualizar_pdf', filename=proposta.nome_arquivo_pdf) }}" target="_blank" rel="noopener">
+                                            {{ proposta.nome_arquivo_pdf }}
+                                        </a>
+                                    {% else %}
+                                        N/A
+                                    {% endif %}
                                 </td>
                             </tr>
                             <tr>

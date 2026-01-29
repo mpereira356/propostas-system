@@ -5,7 +5,7 @@ import os
 import io
 import re
 from datetime import datetime, timedelta, date
-from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file, send_from_directory
 from werkzeug.utils import secure_filename
 from models import db, Proposta, ItemProposta, Cliente, Setor, Regiao, Visita, Contato, Equipamento, init_db
 from pdf_reader import PropostaExtractor
@@ -880,6 +880,15 @@ def detalhes(id):
     proposta = Proposta.query.get_or_404(id)
     itens = ItemProposta.query.filter_by(proposta_id=id).all()
     return render_template('detalhes.html', proposta=proposta, itens=itens)
+
+
+@app.route('/uploads/<path:filename>')
+def visualizar_pdf(filename):
+    """Serve PDFs enviados para visualização no navegador."""
+    safe_name = secure_filename(filename)
+    if not safe_name:
+        return redirect(url_for('listagem'))
+    return send_from_directory(app.config['UPLOAD_FOLDER'], safe_name, as_attachment=False)
 
 @app.route('/editar/<int:id>', methods=['GET', 'POST'])
 def editar(id):
