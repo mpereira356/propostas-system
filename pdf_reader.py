@@ -345,76 +345,130 @@ class PropostaExtractor:
     def extract_itens(self):
         """Extrai os itens da proposta com valores"""
         itens = []
-        
-        # Encontrar início da tabela de itens
-        idx_inicio, _ = self.find_line_with(r'It\.\s+Descrição\s+Qt')
+
+        if not self.lines:
+            return itens
+
+        # Encontrar in??cio da se????o de itens (v??rios formatos)
+        start_patterns = [
+            r'It\.\s+Descricao\s+Qt',
+            r'CONFIGUR.*VALORES.*ITENS',
+            r'ITENS\s+COTAD',
+            r'DESCRICAO\s+DO\s+ITEM'
+        ]
+        idx_inicio = None
+        for pattern in start_patterns:
+            idx_inicio, _ = self.find_line_with(pattern)
+            if idx_inicio is not None:
+                break
         if idx_inicio is None:
             return itens
-        
-        # Procurar por "TOTAL" para saber onde termina
-        idx_fim, _ = self.find_line_with(r'^TOTAL\s+R\$')
+
+        # Procurar final da se????o de itens
+        end_patterns = [
+            r'VALOR\s+TOTAL\s+DA\s+PROPOSTA',
+            r'TOTAL\s+DA\s+PROPOSTA',
+            r'^TOTAL\s+R\$'
+        ]
+        idx_fim = None
+        for pattern in end_patterns:
+            idx_fim, _ = self.find_line_with(pattern)
+            if idx_fim is not None:
+                break
         if idx_fim is None:
             idx_fim = len(self.lines)
-        
-        # Processar linhas entre início e fim
+
+        # Fallback: se encontrar um novo cabe??alho numerado depois do in??cio
+        heading_pattern = re.compile(r'^\d+(?:\.\d+)?\s+.*$', re.IGNORECASE)
+        for j in range(idx_inicio + 1, len(self.lines)):
+            if heading_pattern.match(self.lines[j]):
+                idx_fim = min(idx_fim, j)
+                break
+
+        price_pattern = re.compile(r'R\$\s*([\d.,]+)\s+R\$\s*([\d.,]+)')
+        qty_line_pattern = re.compile(r'^(\d{1,3})\s+(\d{1,3})$')
+        item_num_pattern = re.compile(r'ITEM\s*(\d{1,3})', re.IGNORECASE)
+        header_ignore = re.compile(r'(It\.\s+Descricao|Qt|Unitario|Sub\s*Total|em\s*R\$|\(em\s*R\$\))', re.IGNORECASE)
+
+        descricao_buffer = []
         i = idx_inicio + 1
+        fallback_num = 1
         while i < idx_fim:
             line = self.lines[i]
-            
-            # Verificar se linha começa com número de item (01, 02, etc)
-            item_match = re.match(r'^(\d{2})\s+(.+)', line)
-            if item_match:
-                numero = item_match.group(1)
-                resto = item_match.group(2)
-                
-                # Coletar descrição (pode estar em múltiplas linhas)
-                descricao_parts = [resto]
-                j = i + 1
-                
-                # Continuar coletando até encontrar linha com valores
-                while j < idx_fim:
-                    next_line = self.lines[j]
-                    # Verificar se tem valores (Qt + R$ + valores)
-                    valores_match = re.search(r'(\d{2})\s+R\$\s+([\d.,]+)\s+R\$\s+([\d.,]+)', next_line)
-                    if valores_match:
-                        # Adicionar parte antes dos valores à descrição
-                        parte_antes = next_line[:valores_match.start()].strip()
-                        if parte_antes:
-                            descricao_parts.append(parte_antes)
-                        
-                        # Extrair valores
-                        quantidade = valores_match.group(1)
-                        valor_unitario = valores_match.group(2)
-                        valor_total = valores_match.group(3)
-                        
-                        # Montar item
-                        descricao = ' '.join(descricao_parts)
-                        item = {
-                            'numero': numero,
-                            'descricao': descricao,
-                            'quantidade': quantidade,
-                            'valor_unitario': valor_unitario,
-                            'valor_total': valor_total
-                        }
-                        itens.append(item)
-                        i = j
-                        break
-                    else:
-                        # Adicionar à descrição se não for linha de outro item
-                        if not re.match(r'^\d{2}\s+', next_line):
-                            descricao_parts.append(next_line)
-                        j += 1
-            
+
+            # Ignorar linhas de cabe??alho da tabela
+            if header_ignore.search(line):
+                i += 1
+                continue
+
+            price_match = price_pattern.search(line)
+            if price_match:
+                valor_unitario = price_match.group(1)
+                valor_total = price_match.group(2)
+
+                descricao_parts = []
+                if descricao_buffer:
+                    descricao_parts.extend([d for d in descricao_buffer if not header_ignore.search(d)])
+                    descricao_buffer = []
+
+                # Parte antes dos valores na pr??pria linha
+                parte_antes = line[:price_match.start()].strip()
+                if parte_antes:
+                    descricao_parts.append(parte_antes)
+
+                descricao = ' '.join(descricao_parts).strip() or None
+
+                numero = None
+                quantidade = None
+
+                if descricao:
+                    num_match = item_num_pattern.search(descricao)
+                    if num_match:
+                        numero = num_match.group(1).zfill(2)
+
+                # Tentar pegar quantidade na linha seguinte
+                if i + 1 < idx_fim:
+                    qty_line = self.lines[i + 1]
+                    qty_match = qty_line_pattern.match(qty_line)
+                    if qty_match:
+                        numero = numero or qty_match.group(1).zfill(2)
+                        quantidade = qty_match.group(2)
+                        i += 1
+
+                if numero is None:
+                    numero = str(fallback_num).zfill(2)
+                if quantidade is None:
+                    quantidade = '1'
+
+                itens.append({
+                    'numero': numero,
+                    'descricao': descricao or '',
+                    'quantidade': quantidade,
+                    'valor_unitario': valor_unitario,
+                    'valor_total': valor_total
+                })
+                fallback_num += 1
+                i += 1
+                continue
+
+            # Acumular descri????o at?? achar linha com pre??os
+            if line and not re.match(r'^\d+\.\d+', line) and not header_ignore.search(line):
+                descricao_buffer.append(line)
+
             i += 1
-        
+
         return itens
-    
+
     def extract_valor_total(self):
         """Extrai o valor total da proposta"""
-        pattern = r'TOTAL\s+R\$\s+([\d.,]+)'
-        match = re.search(pattern, self.text)
-        if match:
-            return match.group(1)
+        patterns = [
+            r'TOTAL\s+R\$\s+([\d.,]+)',
+            r'VALOR\s+TOTAL\s+DA\s+PROPOSTA[:\s]*R?\$?\s*([\d.,]+)'
+        ]
+        for pattern in patterns:
+            match = re.search(pattern, self.text, re.IGNORECASE)
+            if match:
+                return match.group(1)
         return None
     
     def extract_all(self):

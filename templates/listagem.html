@@ -249,7 +249,9 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if proposta.vencida %}
+                                    {% if proposta.observacoes == 'Proposta ganha' %}
+                                        <span class="badge text-bg-success">Proposta ganha</span>
+                                    {% elif proposta.vencida %}
                                         <span class="badge text-bg-danger">Vencida</span>
                                     {% elif proposta.vencendo %}
                                         <span class="badge badge-vencendo">Vencendo</span>
@@ -259,7 +261,10 @@
                                 </td>
                                 <td>
                                     <form method="POST" action="{{ url_for('atualizar_observacoes', id=proposta.id) }}">
-                                        <select name="observacoes" class="form-select form-select-sm" onchange="this.form.submit()">
+                                        <select name="observacoes"
+                                                class="form-select form-select-sm"
+                                                onchange="this.form.submit()"
+                                                {% if proposta.observacoes == 'Proposta ganha' %}disabled{% endif %}>
                                             <option value="">Selecione</option>
                                             <option value="Proposta ganha" {% if proposta.observacoes == 'Proposta ganha' %}selected{% endif %}>Proposta ganha</option>
                                             <option value="Proposta perdida" {% if proposta.observacoes == 'Proposta perdida' %}selected{% endif %}>Proposta perdida</option>
