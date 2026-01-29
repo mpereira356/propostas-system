@@ -35,6 +35,8 @@ class Proposta(db.Model):
     garantia_resumo = db.Column(db.Text)
     garantia_texto = db.Column(db.Text)
     observacoes = db.Column(db.String(30))
+    id_proposta_base = db.Column(db.String(50))
+    versao = db.Column(db.String(5))
     data_importacao = db.Column(db.DateTime, default=datetime.now)
     
     # Relacionamento com itens
@@ -69,6 +71,8 @@ class Proposta(db.Model):
             'garantia_resumo': self.garantia_resumo,
             'garantia_texto': self.garantia_texto,
             'observacoes': self.observacoes,
+            'id_proposta_base': self.id_proposta_base,
+            'versao': self.versao,
             'data_importacao': self.data_importacao.strftime('%d/%m/%Y %H:%M:%S') if self.data_importacao else None
         }
 

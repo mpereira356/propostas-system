@@ -210,7 +210,7 @@
                 {% endif %}
 
                 <!-- Tabela de Propostas -->
-                {% if propostas %}
+                {% if grupos %}
                 <div class="table-responsive">
                     <table class="table table-hover table-striped">
                         <thead class="table-dark">
@@ -226,10 +226,22 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for proposta in propostas %}
+                            {% for grupo in grupos %}
+                            {% set proposta = grupo.current %}
                             <tr class="{% if proposta.observacoes == 'Vencida' %}table-danger{% elif proposta.observacoes == 'Ganha' %}table-success{% else %}{% endif %}">
                                 <td>
                                     <strong>{{ proposta.id_proposta or 'N/A' }}</strong>
+                                    {% if grupo.versions %}
+                                        <button class="btn btn-sm btn-outline-secondary ms-2"
+                                                type="button"
+                                                data-bs-toggle="collapse"
+                                                data-bs-target="#versoes-{{ proposta.id }}"
+                                                aria-expanded="false"
+                                                aria-controls="versoes-{{ proposta.id }}"
+                                                title="Ver versões antigas">
+                                            <i class="bi bi-caret-down-fill"></i>
+                                        </button>
+                                    {% endif %}
                                 </td>
                                 <td>{{ proposta.razao_social or 'Não informado' }}</td>
                                 <td>{{ proposta.cnpj or 'N/A' }}</td>
@@ -297,6 +309,81 @@
                                     </button>
                                 </td>
                             </tr>
+                            {% if grupo.versions %}
+                                {% for versao in grupo.versions %}
+                                <tr class="collapse" id="versoes-{{ proposta.id }}">
+                                    <td class="ps-4">
+                                        <i class="bi bi-arrow-return-right me-2"></i>
+                                        <strong>{{ versao.id_proposta or 'N/A' }}</strong>
+                                    </td>
+                                    <td>{{ versao.razao_social or 'Não informado' }}</td>
+                                    <td>{{ versao.cnpj or 'N/A' }}</td>
+                                    <td>{{ versao.data_emissao or 'N/A' }}</td>
+                                    <td>
+                                        {{ versao.data_vencimento.strftime('%d/%m/%Y') if versao.data_vencimento else 'N/A' }}
+                                    </td>
+                                    <td>
+                                        {% if versao.cod_vendedor %}
+                                            <strong>{{ versao.cod_vendedor }}</strong>
+                                        {% else %}
+                                            <form method="POST" action="{{ url_for('atualizar_cod', id=versao.id) }}" class="d-flex gap-2">
+                                                <input type="text" name="cod_vendedor" class="form-control form-control-sm" placeholder="cod">
+                                                <button type="submit" class="btn btn-sm btn-outline-primary">Salvar</button>
+                                            </form>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if versao.observacoes == 'Ganha' %}
+                                            <span class="badge text-bg-success">Ganha</span>
+                                        {% elif versao.observacoes == 'Perdida' %}
+                                            <span class="badge text-bg-danger">Perdida</span>
+                                        {% elif versao.observacoes == 'Vencida' %}
+                                            <span class="badge text-bg-danger">Vencida</span>
+                                        {% else %}
+                                            <span class="badge badge-vencendo">Em negociação</span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="text-center">
+                                        {% if versao.observacoes != 'Vencida' %}
+                                        <form method="POST" action="{{ url_for('atualizar_observacoes', id=versao.id) }}" class="d-inline">
+                                            <input type="hidden" name="observacoes" value="Em negociação">
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary" title="Em negociação">
+                                                <i class="bi bi-arrow-repeat"></i>
+                                            </button>
+                                        </form>
+                                        <form method="POST" action="{{ url_for('atualizar_observacoes', id=versao.id) }}" class="d-inline">
+                                            <input type="hidden" name="observacoes" value="Ganha">
+                                            <button type="submit" class="btn btn-sm btn-action-view" title="Marcar como ganha">
+                                                <i class="bi bi-check-circle"></i>
+                                            </button>
+                                        </form>
+                                        <form method="POST" action="{{ url_for('atualizar_observacoes', id=versao.id) }}" class="d-inline">
+                                            <input type="hidden" name="observacoes" value="Perdida">
+                                            <button type="submit" class="btn btn-sm btn-action-delete" title="Marcar como perdida">
+                                                <i class="bi bi-x-circle"></i>
+                                            </button>
+                                        </form>
+                                        {% endif %}
+                                        <a href="{{ url_for('detalhes', id=versao.id) }}" 
+                                           class="btn btn-sm btn-action-view"
+                                           title="Ver detalhes">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <a href="{{ url_for('editar', id=versao.id) }}"
+                                           class="btn btn-sm btn-action-edit"
+                                           title="Editar">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+                                        <button type="button" 
+                                                class="btn btn-sm btn-action-delete"
+                                                onclick="confirmarDelete({{ versao.id }}, '{{ versao.id_proposta }}')"
+                                                title="Deletar">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            {% endif %}
                             {% endfor %}
                         </tbody>
                     </table>
@@ -305,7 +392,7 @@
                 <div class="mt-3">
                     <p class="text-muted">
                         <i class="bi bi-info-circle"></i> 
-                        Total de propostas encontradas: <strong>{{ propostas|length }}</strong>
+                        Total de propostas encontradas: <strong>{{ total_propostas }}</strong>
                         {% if total_vencidas is not none %}
                             | Vencidas: <strong class="text-danger">{{ total_vencidas }}</strong>
                         {% endif %}

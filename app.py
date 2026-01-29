@@ -61,6 +61,27 @@ def extract_cod_from_filename(filename):
     return None
 
 
+def split_proposta_id(id_proposta):
+    """Retorna (base_id, versao) a partir do ID da proposta."""
+    if not id_proposta:
+        return None, None
+    match = re.match(r'^([A-Z]{2})\.(\d{3,4})([A-Z]?)/(\d{2,4})$', id_proposta.strip(), re.IGNORECASE)
+    if not match:
+        return id_proposta, ''
+    prefixo, numero, versao, ano = match.groups()
+    base_id = f"{prefixo.upper()}.{numero}/{ano}"
+    return base_id, versao.upper() if versao else ''
+
+
+def versao_ordem(versao):
+    """Converte letra de versão em ordem numérica."""
+    if not versao:
+        return 0
+    if len(versao) == 1 and 'A' <= versao.upper() <= 'Z':
+        return ord(versao.upper()) - ord('A') + 1
+    return 0
+
+
 def ensure_schema():
     """Garante colunas novas no SQLite sem migração."""
     with db.engine.connect() as conn:
@@ -82,6 +103,10 @@ def ensure_schema():
             conn.execute(text("ALTER TABLE propostas ADD COLUMN garantia_texto TEXT"))
         if 'observacoes' not in existing:
             conn.execute(text("ALTER TABLE propostas ADD COLUMN observacoes VARCHAR(30)"))
+        if 'id_proposta_base' not in existing:
+            conn.execute(text("ALTER TABLE propostas ADD COLUMN id_proposta_base VARCHAR(50)"))
+        if 'versao' not in existing:
+            conn.execute(text("ALTER TABLE propostas ADD COLUMN versao VARCHAR(5)"))
 
         # Visitas: ajustes de schema
         try:
@@ -230,6 +255,9 @@ def upload():
                     garantia_texto=dados.get('garantia_texto'),
                     observacoes='Em negociação'
                 )
+                base_id, versao = split_proposta_id(dados.get('id_proposta'))
+                proposta.id_proposta_base = base_id
+                proposta.versao = versao
 
                 db.session.add(proposta)
                 db.session.flush()
@@ -366,6 +394,13 @@ def listagem():
             elif proposta.data_vencimento <= limite_vencendo:
                 proposta.vencendo = True
 
+        # Backfill base/versao
+        if not proposta.id_proposta_base:
+            base_id, versao = split_proposta_id(proposta.id_proposta)
+            proposta.id_proposta_base = base_id
+            proposta.versao = versao
+            alterou = True
+
         if proposta.vencida:
             if proposta.observacoes != 'Vencida':
                 proposta.observacoes = 'Vencida'
@@ -377,17 +412,33 @@ def listagem():
     if alterou:
         db.session.commit()
 
-    total_propostas = Proposta.query.count()
-    total_ganhas = Proposta.query.filter_by(observacoes='Ganha').count()
-    total_perdidas = Proposta.query.filter_by(observacoes='Perdida').count()
-    total_abertas = Proposta.query.filter_by(observacoes='Em negociação').count()
-    total_vencidas_dashboard = Proposta.query.filter(
-        Proposta.data_vencimento.isnot(None),
-        Proposta.data_vencimento < hoje
-    ).count()
+    # Agrupar por proposta base (versões)
+    grupos = {}
+    for proposta in propostas:
+        base_id = proposta.id_proposta_base or proposta.id_proposta
+        grupos.setdefault(base_id, []).append(proposta)
+
+    grupos_lista = []
+    for base_id, itens in grupos.items():
+        itens_ordenados = sorted(
+            itens,
+            key=lambda p: (versao_ordem(p.versao or ''), p.data_importacao or datetime.min)
+        )
+        current = itens_ordenados[-1]
+        anteriores = list(reversed(itens_ordenados[:-1]))
+        grupos_lista.append({'current': current, 'versions': anteriores})
+
+    # Ordenar grupos pelo ID base
+    grupos_lista.sort(key=lambda g: (g['current'].id_proposta_base or g['current'].id_proposta or ''))
+
+    total_propostas = len(grupos_lista)
+    total_ganhas = sum(1 for g in grupos_lista if g['current'].observacoes == 'Ganha')
+    total_perdidas = sum(1 for g in grupos_lista if g['current'].observacoes == 'Perdida')
+    total_abertas = sum(1 for g in grupos_lista if g['current'].observacoes == 'Em negociação')
+    total_vencidas_dashboard = sum(1 for g in grupos_lista if g['current'].observacoes == 'Vencida')
     
     return render_template('listagem.html', 
-                         propostas=propostas,
+                         grupos=grupos_lista,
                          filtros={
                              'razao_social': razao_social,
                              'cnpj': cnpj,
