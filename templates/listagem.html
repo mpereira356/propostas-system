@@ -95,6 +95,17 @@
     .actions-wrap .btn {
         min-width: 32px;
     }
+    @media (max-width: 576px) {
+        .actions-wrap {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 6px;
+            justify-items: center;
+        }
+        .actions-wrap .btn {
+            width: 100%;
+        }
+    }
 </style>
 {% endblock %}
 
@@ -261,43 +272,43 @@
                                 <th>
                                     <a class="text-white text-decoration-none" href="{{ url_for('listagem', razao_social=filtros.razao_social, cnpj=filtros.cnpj, id_proposta=filtros.id_proposta, cod_vendedor=filtros.cod_vendedor, per_page=per_page, sort='id_proposta', order=('desc' if sort=='id_proposta' and order=='asc' else 'asc'), page=1) }}">
                                         ID Proposta
-                                        {% if sort == 'id_proposta' %}{{ ' &uarr;' if order == 'asc' else ' &darr;' }}{% endif %}
+                                        {% if sort == 'id_proposta' %}{{ (' &uarr;' if order == 'asc' else ' &darr;') | safe }}{% endif %}
                                     </a>
                                 </th>
                                 <th>
                                     <a class="text-white text-decoration-none" href="{{ url_for('listagem', razao_social=filtros.razao_social, cnpj=filtros.cnpj, id_proposta=filtros.id_proposta, cod_vendedor=filtros.cod_vendedor, per_page=per_page, sort='razao_social', order=('desc' if sort=='razao_social' and order=='asc' else 'asc'), page=1) }}">
                                         Razao Social
-                                        {% if sort == 'razao_social' %}{{ ' &uarr;' if order == 'asc' else ' &darr;' }}{% endif %}
+                                        {% if sort == 'razao_social' %}{{ (' &uarr;' if order == 'asc' else ' &darr;') | safe }}{% endif %}
                                     </a>
                                 </th>
                                 <th>
                                     <a class="text-white text-decoration-none" href="{{ url_for('listagem', razao_social=filtros.razao_social, cnpj=filtros.cnpj, id_proposta=filtros.id_proposta, cod_vendedor=filtros.cod_vendedor, per_page=per_page, sort='cnpj', order=('desc' if sort=='cnpj' and order=='asc' else 'asc'), page=1) }}">
                                         CNPJ
-                                        {% if sort == 'cnpj' %}{{ ' &uarr;' if order == 'asc' else ' &darr;' }}{% endif %}
+                                        {% if sort == 'cnpj' %}{{ (' &uarr;' if order == 'asc' else ' &darr;') | safe }}{% endif %}
                                     </a>
                                 </th>
                                 <th>
                                     <a class="text-white text-decoration-none" href="{{ url_for('listagem', razao_social=filtros.razao_social, cnpj=filtros.cnpj, id_proposta=filtros.id_proposta, cod_vendedor=filtros.cod_vendedor, per_page=per_page, sort='data_emissao', order=('desc' if sort=='data_emissao' and order=='asc' else 'asc'), page=1) }}">
                                         Data Emissao
-                                        {% if sort == 'data_emissao' %}{{ ' &uarr;' if order == 'asc' else ' &darr;' }}{% endif %}
+                                        {% if sort == 'data_emissao' %}{{ (' &uarr;' if order == 'asc' else ' &darr;') | safe }}{% endif %}
                                     </a>
                                 </th>
                                 <th>
                                     <a class="text-white text-decoration-none" href="{{ url_for('listagem', razao_social=filtros.razao_social, cnpj=filtros.cnpj, id_proposta=filtros.id_proposta, cod_vendedor=filtros.cod_vendedor, per_page=per_page, sort='data_vencimento', order=('desc' if sort=='data_vencimento' and order=='asc' else 'asc'), page=1) }}">
                                         Data Vencimento
-                                        {% if sort == 'data_vencimento' %}{{ ' &uarr;' if order == 'asc' else ' &darr;' }}{% endif %}
+                                        {% if sort == 'data_vencimento' %}{{ (' &uarr;' if order == 'asc' else ' &darr;') | safe }}{% endif %}
                                     </a>
                                 </th>
                                 <th>
                                     <a class="text-white text-decoration-none" href="{{ url_for('listagem', razao_social=filtros.razao_social, cnpj=filtros.cnpj, id_proposta=filtros.id_proposta, cod_vendedor=filtros.cod_vendedor, per_page=per_page, sort='cod_vendedor', order=('desc' if sort=='cod_vendedor' and order=='asc' else 'asc'), page=1) }}">
                                         Cod Vendedor
-                                        {% if sort == 'cod_vendedor' %}{{ ' &uarr;' if order == 'asc' else ' &darr;' }}{% endif %}
+                                        {% if sort == 'cod_vendedor' %}{{ (' &uarr;' if order == 'asc' else ' &darr;') | safe }}{% endif %}
                                     </a>
                                 </th>
                                 <th>
                                     <a class="text-white text-decoration-none" href="{{ url_for('listagem', razao_social=filtros.razao_social, cnpj=filtros.cnpj, id_proposta=filtros.id_proposta, cod_vendedor=filtros.cod_vendedor, per_page=per_page, sort='status', order=('desc' if sort=='status' and order=='asc' else 'asc'), page=1) }}">
                                         Status
-                                        {% if sort == 'status' %}{{ ' &uarr;' if order == 'asc' else ' &darr;' }}{% endif %}
+                                        {% if sort == 'status' %}{{ (' &uarr;' if order == 'asc' else ' &darr;') | safe }}{% endif %}
                                     </a>
                                 </th>
                                 <th class="text-center">Acoes</th>
