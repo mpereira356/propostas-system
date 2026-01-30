@@ -82,6 +82,19 @@
         border-color: #274C77;
         color: #FFFFFF;
     }
+    .actions-wrap {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: center;
+        align-items: center;
+    }
+    .actions-wrap form {
+        margin: 0;
+    }
+    .actions-wrap .btn {
+        min-width: 32px;
+    }
 </style>
 {% endblock %}
 
@@ -178,6 +191,8 @@
 
                 <!-- Filtros -->
                 <form method="GET" class="row g-3 mb-4">
+                    <input type="hidden" name="sort" value="{{ filtros.sort }}">
+                    <input type="hidden" name="order" value="{{ filtros.order }}">
                     <div class="col-md-4">
                         <label for="razao_social" class="form-label">Razão Social</label>
                         <input type="text" 
@@ -214,6 +229,14 @@
                                value="{{ filtros.cod_vendedor }}"
                                placeholder="016">
                     </div>
+                    <div class="col-md-2">
+                        <label for="per_page" class="form-label">Por pÃ¡gina</label>
+                        <select id="per_page" name="per_page" class="form-select">
+                            <option value="10" {% if filtros.per_page == 10 %}selected{% endif %}>10</option>
+                            <option value="50" {% if filtros.per_page == 50 %}selected{% endif %}>50</option>
+                            <option value="150" {% if filtros.per_page == 150 %}selected{% endif %}>150</option>
+                        </select>
+                    </div>
                     <div class="col-md-2 d-flex align-items-end">
                         <button type="submit" class="btn btn-filtrar w-100">
                             <i class="bi bi-search"></i> Filtrar
@@ -235,14 +258,49 @@
                     <table class="table table-hover table-striped">
                         <thead class="table-dark">
                             <tr>
-                                <th>ID Proposta</th>
-                                <th>Razão Social</th>
-                                <th>CNPJ</th>
-                                <th>Data Emissão</th>
-                                <th>Data Vencimento</th>
-                                <th>Cod Vendedor</th>
-                                <th>Status</th>
-                                <th class="text-center">Ações</th>
+                                <th>
+                                    <a class="text-white text-decoration-none" href="{{ url_for('listagem', razao_social=filtros.razao_social, cnpj=filtros.cnpj, id_proposta=filtros.id_proposta, cod_vendedor=filtros.cod_vendedor, per_page=per_page, sort='id_proposta', order=('desc' if sort=='id_proposta' and order=='asc' else 'asc'), page=1) }}">
+                                        ID Proposta
+                                        {% if sort == 'id_proposta' %}{{ ' (ASC)' if order == 'asc' else ' (DESC)' }}{% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-white text-decoration-none" href="{{ url_for('listagem', razao_social=filtros.razao_social, cnpj=filtros.cnpj, id_proposta=filtros.id_proposta, cod_vendedor=filtros.cod_vendedor, per_page=per_page, sort='razao_social', order=('desc' if sort=='razao_social' and order=='asc' else 'asc'), page=1) }}">
+                                        Razao Social
+                                        {% if sort == 'razao_social' %}{{ ' (ASC)' if order == 'asc' else ' (DESC)' }}{% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-white text-decoration-none" href="{{ url_for('listagem', razao_social=filtros.razao_social, cnpj=filtros.cnpj, id_proposta=filtros.id_proposta, cod_vendedor=filtros.cod_vendedor, per_page=per_page, sort='cnpj', order=('desc' if sort=='cnpj' and order=='asc' else 'asc'), page=1) }}">
+                                        CNPJ
+                                        {% if sort == 'cnpj' %}{{ ' (ASC)' if order == 'asc' else ' (DESC)' }}{% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-white text-decoration-none" href="{{ url_for('listagem', razao_social=filtros.razao_social, cnpj=filtros.cnpj, id_proposta=filtros.id_proposta, cod_vendedor=filtros.cod_vendedor, per_page=per_page, sort='data_emissao', order=('desc' if sort=='data_emissao' and order=='asc' else 'asc'), page=1) }}">
+                                        Data Emissao
+                                        {% if sort == 'data_emissao' %}{{ ' (ASC)' if order == 'asc' else ' (DESC)' }}{% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-white text-decoration-none" href="{{ url_for('listagem', razao_social=filtros.razao_social, cnpj=filtros.cnpj, id_proposta=filtros.id_proposta, cod_vendedor=filtros.cod_vendedor, per_page=per_page, sort='data_vencimento', order=('desc' if sort=='data_vencimento' and order=='asc' else 'asc'), page=1) }}">
+                                        Data Vencimento
+                                        {% if sort == 'data_vencimento' %}{{ ' (ASC)' if order == 'asc' else ' (DESC)' }}{% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-white text-decoration-none" href="{{ url_for('listagem', razao_social=filtros.razao_social, cnpj=filtros.cnpj, id_proposta=filtros.id_proposta, cod_vendedor=filtros.cod_vendedor, per_page=per_page, sort='cod_vendedor', order=('desc' if sort=='cod_vendedor' and order=='asc' else 'asc'), page=1) }}">
+                                        Cod Vendedor
+                                        {% if sort == 'cod_vendedor' %}{{ ' (ASC)' if order == 'asc' else ' (DESC)' }}{% endif %}
+                                    </a>
+                                </th>
+                                <th>
+                                    <a class="text-white text-decoration-none" href="{{ url_for('listagem', razao_social=filtros.razao_social, cnpj=filtros.cnpj, id_proposta=filtros.id_proposta, cod_vendedor=filtros.cod_vendedor, per_page=per_page, sort='status', order=('desc' if sort=='status' and order=='asc' else 'asc'), page=1) }}">
+                                        Status
+                                        {% if sort == 'status' %}{{ ' (ASC)' if order == 'asc' else ' (DESC)' }}{% endif %}
+                                    </a>
+                                </th>
+                                <th class="text-center">Acoes</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -291,6 +349,7 @@
                                     {% endif %}
                                 </td>
                                 <td class="text-center">
+                                    <div class="actions-wrap">
                                     {% if proposta.observacoes != 'Vencida' %}
                                     <form method="POST" action="{{ url_for('atualizar_observacoes', id=proposta.id) }}" class="d-inline">
                                         <input type="hidden" name="observacoes" value="Em negociação">
@@ -327,6 +386,7 @@
                                             title="Deletar">
                                         <i class="bi bi-trash"></i>
                                     </button>
+                                                                    </div>
                                 </td>
                             </tr>
                             {% if grupo.versions %}
@@ -364,6 +424,7 @@
                                         {% endif %}
                                     </td>
                                     <td class="text-center">
+                                        <div class="actions-wrap">
                                         {% if versao.observacoes != 'Vencida' %}
                                         <form method="POST" action="{{ url_for('atualizar_observacoes', id=versao.id) }}" class="d-inline">
                                             <input type="hidden" name="observacoes" value="Em negociação">
@@ -400,6 +461,7 @@
                                                 title="Deletar">
                                             <i class="bi bi-trash"></i>
                                         </button>
+                                                                            </div>
                                     </td>
                                 </tr>
                                 {% endfor %}
@@ -408,6 +470,24 @@
                         </tbody>
                     </table>
                 </div>
+
+                {% if total_pages > 1 %}
+                <nav class="mt-3" aria-label="Paginacao">
+                    <ul class="pagination justify-content-center mb-2">
+                        <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('listagem', razao_social=filtros.razao_social, cnpj=filtros.cnpj, id_proposta=filtros.id_proposta, cod_vendedor=filtros.cod_vendedor, per_page=per_page, sort=sort, order=order, page=page-1) }}">Anterior</a>
+                        </li>
+                        {% for p in range(1, total_pages + 1) %}
+                        <li class="page-item {% if p == page %}active{% endif %}">
+                            <a class="page-link" href="{{ url_for('listagem', razao_social=filtros.razao_social, cnpj=filtros.cnpj, id_proposta=filtros.id_proposta, cod_vendedor=filtros.cod_vendedor, per_page=per_page, sort=sort, order=order, page=p) }}">{{ p }}</a>
+                        </li>
+                        {% endfor %}
+                        <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('listagem', razao_social=filtros.razao_social, cnpj=filtros.cnpj, id_proposta=filtros.id_proposta, cod_vendedor=filtros.cod_vendedor, per_page=per_page, sort=sort, order=order, page=page+1) }}">Proxima</a>
+                        </li>
+                    </ul>
+                </nav>
+                {% endif %}
 
                 <div class="mt-3">
                     <p class="text-muted">

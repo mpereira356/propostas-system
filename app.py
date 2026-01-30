@@ -7,6 +7,7 @@ import re
 import threading
 from queue import Queue
 from datetime import datetime, timedelta, date
+from math import ceil
 from flask import Flask, render_template, request, redirect, url_for, flash, jsonify, send_file, send_from_directory
 from werkzeug.utils import secure_filename
 from models import db, Proposta, ItemProposta, Cliente, Setor, Regiao, Visita, Contato, Equipamento, init_db
@@ -353,6 +354,22 @@ def listagem():
     cnpj = request.args.get('cnpj', '').strip()
     id_proposta = request.args.get('id_proposta', '').strip()
     cod_vendedor = request.args.get('cod_vendedor', '').strip()
+    sort = request.args.get('sort', 'id_proposta').strip()
+    order = request.args.get('order', 'asc').strip().lower()
+    page = request.args.get('page', '1').strip()
+    per_page = request.args.get('per_page', '50').strip()
+    try:
+        page = max(int(page), 1)
+    except Exception:
+        page = 1
+    try:
+        per_page = int(per_page)
+    except Exception:
+        per_page = 50
+    if per_page not in (10, 50, 150):
+        per_page = 50
+    if order not in ('asc', 'desc'):
+        order = 'asc'
     
     # Query base
     query = Proposta.query
@@ -465,10 +482,44 @@ def listagem():
         anteriores = list(reversed(itens_ordenados[:-1]))
         grupos_lista.append({'current': current, 'versions': anteriores})
 
-    # Ordenar grupos pelo ID base
-    grupos_lista.sort(key=lambda g: (g['current'].id_proposta_base or g['current'].id_proposta or ''))
+    # Ordenar grupos pelo campo escolhido (apenas proposta atual)
+    allowed_sorts = {
+        'id_proposta',
+        'razao_social',
+        'cnpj',
+        'data_emissao',
+        'data_vencimento',
+        'cod_vendedor',
+        'status'
+    }
+    if sort not in allowed_sorts:
+        sort = 'id_proposta'
+
+    def _sort_key(grupo):
+        proposta = grupo['current']
+        if sort == 'data_emissao':
+            return parse_date_br(proposta.data_emissao) or date.min
+        if sort == 'data_vencimento':
+            return proposta.data_vencimento or date.min
+        if sort == 'status':
+            return (proposta.observacoes or '').lower()
+        if sort == 'cnpj':
+            return (proposta.cnpj or '').lower()
+        if sort == 'razao_social':
+            return (proposta.razao_social or '').lower()
+        if sort == 'cod_vendedor':
+            return (proposta.cod_vendedor or '').lower()
+        return (proposta.id_proposta or '').lower()
+
+    grupos_lista.sort(key=_sort_key, reverse=(order == 'desc'))
 
     total_propostas = len(grupos_lista)
+    total_pages = max(ceil(total_propostas / per_page), 1)
+    if page > total_pages:
+        page = total_pages
+    start_idx = (page - 1) * per_page
+    end_idx = start_idx + per_page
+    grupos_paginados = grupos_lista[start_idx:end_idx]
     total_ganhas = sum(1 for g in grupos_lista if g['current'].observacoes == 'Ganha')
     total_perdidas = sum(1 for g in grupos_lista if g['current'].observacoes == 'Perdida')
     total_abertas = sum(1 for g in grupos_lista if g['current'].observacoes == 'Em negociação')
@@ -476,19 +527,27 @@ def listagem():
     total_vencidas = total_vencidas_dashboard
     
     return render_template('listagem.html', 
-                         grupos=grupos_lista,
+                         grupos=grupos_paginados,
                          filtros={
                              'razao_social': razao_social,
                              'cnpj': cnpj,
                              'id_proposta': id_proposta,
-                             'cod_vendedor': cod_vendedor
+                             'cod_vendedor': cod_vendedor,
+                             'sort': sort,
+                             'order': order,
+                             'per_page': per_page
                          },
                          total_vencidas=total_vencidas,
                          total_propostas=total_propostas,
                          total_ganhas=total_ganhas,
                          total_perdidas=total_perdidas,
                          total_abertas=total_abertas,
-                         total_vencidas_dashboard=total_vencidas_dashboard)
+                         total_vencidas_dashboard=total_vencidas_dashboard,
+                         page=page,
+                         per_page=per_page,
+                         total_pages=total_pages,
+                         sort=sort,
+                         order=order)
 
 
 @app.route('/api/upload_status')
