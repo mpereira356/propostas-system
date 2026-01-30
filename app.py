@@ -684,6 +684,21 @@ def relatorio_export():
                      mimetype='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
 
+@app.route('/relatorio/export_db')
+def relatorio_export_db():
+    """Exporta o banco SQLite completo"""
+    db_path = os.path.join(app.instance_path, 'database.db')
+    if not os.path.exists(db_path):
+        flash('Banco de dados nao encontrado.', 'error')
+        return redirect(url_for('relatorio'))
+    return send_file(
+        db_path,
+        mimetype='application/x-sqlite3',
+        as_attachment=True,
+        download_name='database.db'
+    )
+
+
 @app.route('/clientes/novo', methods=['GET', 'POST'])
 def clientes_novo():
     """Cadastro de novos clientes"""
