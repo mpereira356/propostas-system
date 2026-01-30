@@ -26,6 +26,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 app.config['MAX_FILES_PER_UPLOAD'] = 10
+app.config['BACKFILL_MAX_PER_REQUEST'] = 3
 
 upload_queue = Queue()
 upload_lock = threading.Lock()
@@ -373,6 +374,10 @@ def listagem():
     limite_vencendo = hoje + timedelta(days=7)
     total_vencidas = 0
     alterou = False
+    backfill_remaining = app.config.get('BACKFILL_MAX_PER_REQUEST', 0) or 0
+    with upload_lock:
+        pending_imports = max(upload_total - upload_done, 0)
+    skip_backfill = pending_imports > 0
 
     for proposta in propostas:
         # Backfill de data de vencimento se faltar
@@ -397,18 +402,24 @@ def listagem():
             proposta.garantia_resumo is None,
             proposta.garantia_texto is None
         ])
-        if needs_backfill and proposta.nome_arquivo_pdf:
+        if needs_backfill and proposta.nome_arquivo_pdf and backfill_remaining > 0 and not skip_backfill:
             pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], proposta.nome_arquivo_pdf)
             if os.path.exists(pdf_path):
                 extractor = PropostaExtractor(pdf_path)
                 dados = extractor.extract_all()
                 if dados:
-                    proposta.instalacao_status = dados.get('instalacao_status') or proposta.instalacao_status
-                    proposta.qualificacoes_status = dados.get('qualificacoes_status') or proposta.qualificacoes_status
-                    proposta.treinamento_status = dados.get('treinamento_status') or proposta.treinamento_status
-                    proposta.garantia_resumo = dados.get('garantia_resumo') or proposta.garantia_resumo
-                    proposta.garantia_texto = dados.get('garantia_texto') or proposta.garantia_texto
+                    if proposta.instalacao_status is None:
+                        proposta.instalacao_status = dados.get('instalacao_status') or 'Nao informado'
+                    if proposta.qualificacoes_status is None:
+                        proposta.qualificacoes_status = dados.get('qualificacoes_status') or 'Nao informado'
+                    if proposta.treinamento_status is None:
+                        proposta.treinamento_status = dados.get('treinamento_status') or 'Nao informado'
+                    if proposta.garantia_resumo is None:
+                        proposta.garantia_resumo = dados.get('garantia_resumo') or 'Nao informado'
+                    if proposta.garantia_texto is None:
+                        proposta.garantia_texto = dados.get('garantia_texto') or 'Nao informado'
                     alterou = True
+            backfill_remaining -= 1
 
         # Flags para status de vencimento
         proposta.vencida = False
@@ -462,6 +473,7 @@ def listagem():
     total_perdidas = sum(1 for g in grupos_lista if g['current'].observacoes == 'Perdida')
     total_abertas = sum(1 for g in grupos_lista if g['current'].observacoes == 'Em negociação')
     total_vencidas_dashboard = sum(1 for g in grupos_lista if g['current'].observacoes == 'Vencida')
+    total_vencidas = total_vencidas_dashboard
     
     return render_template('listagem.html', 
                          grupos=grupos_lista,
