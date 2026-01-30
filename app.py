@@ -12,7 +12,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from werkzeug.utils import secure_filename
 from models import db, Proposta, ItemProposta, Cliente, Setor, Regiao, Visita, Contato, Equipamento, init_db
 from pdf_reader import PropostaExtractor
-from sqlalchemy import text, func
+from sqlalchemy import text, func, literal
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 
@@ -371,21 +371,80 @@ def listagem():
     if order not in ('asc', 'desc'):
         order = 'asc'
     
-    # Query base
-    query = Proposta.query
-    
+    # Query base (apenas a proposta atual por base)
+    base_expr = func.coalesce(Proposta.id_proposta_base, Proposta.id_proposta)
+    subq = db.session.query(
+        base_expr.label('base_id'),
+        func.max(Proposta.data_importacao).label('max_import')
+    ).group_by(base_expr).subquery()
+
+    current_query = Proposta.query.join(
+        subq,
+        (base_expr == subq.c.base_id) & (Proposta.data_importacao == subq.c.max_import)
+    )
+
     # Aplicar filtros
     if razao_social:
-        query = query.filter(Proposta.razao_social.ilike(f'%{razao_social}%'))
+        current_query = current_query.filter(Proposta.razao_social.ilike(f'%{razao_social}%'))
     if cnpj:
-        query = query.filter(Proposta.cnpj.ilike(f'%{cnpj}%'))
+        current_query = current_query.filter(Proposta.cnpj.ilike(f'%{cnpj}%'))
     if id_proposta:
-        query = query.filter(Proposta.id_proposta.ilike(f'%{id_proposta}%'))
+        current_query = current_query.filter(Proposta.id_proposta.ilike(f'%{id_proposta}%'))
     if cod_vendedor:
-        query = query.filter(Proposta.cod_vendedor.ilike(f'%{cod_vendedor}%'))
-    
-    # Ordenar por ID da proposta (crescente)
-    propostas = query.order_by(Proposta.id_proposta.asc()).all()
+        current_query = current_query.filter(Proposta.cod_vendedor.ilike(f'%{cod_vendedor}%'))
+
+    # Ordenacao
+    if sort == 'data_emissao':
+        emissao_expr = func.substr(Proposta.data_emissao, 7, 4)
+        emissao_expr = emissao_expr.op('||')(literal('-')).op('||')(func.substr(Proposta.data_emissao, 4, 2)).op('||')(literal('-')).op('||')(func.substr(Proposta.data_emissao, 1, 2))
+        order_col = func.coalesce(emissao_expr, '')
+    elif sort == 'data_vencimento':
+        order_col = func.coalesce(Proposta.data_vencimento, date.min)
+    elif sort == 'status':
+        order_col = func.lower(func.coalesce(Proposta.observacoes, ''))
+    elif sort == 'cnpj':
+        order_col = func.lower(func.coalesce(Proposta.cnpj, ''))
+    elif sort == 'razao_social':
+        order_col = func.lower(func.coalesce(Proposta.razao_social, ''))
+    elif sort == 'cod_vendedor':
+        order_col = func.lower(func.coalesce(Proposta.cod_vendedor, ''))
+    else:
+        order_col = func.lower(func.coalesce(Proposta.id_proposta, ''))
+
+    if order == 'desc':
+        current_query = current_query.order_by(order_col.desc())
+    else:
+        current_query = current_query.order_by(order_col.asc())
+
+    total_propostas = current_query.count()
+    total_pages = max(ceil(total_propostas / per_page), 1)
+    if page > total_pages:
+        page = total_pages
+    start_idx = (page - 1) * per_page
+
+    current_propostas = current_query.offset(start_idx).limit(per_page).all()
+
+    base_ids = [p.id_proposta_base or p.id_proposta for p in current_propostas]
+    grupos_lista = []
+    propostas_para_backfill = []
+
+    if base_ids:
+        all_versions = Proposta.query.filter(base_expr.in_(base_ids)).all()
+        propostas_para_backfill = all_versions
+        grupos = {}
+        for proposta in all_versions:
+            base_id = proposta.id_proposta_base or proposta.id_proposta
+            grupos.setdefault(base_id, []).append(proposta)
+
+        for current in current_propostas:
+            base_id = current.id_proposta_base or current.id_proposta
+            itens = grupos.get(base_id, [])
+            itens_ordenados = sorted(
+                itens,
+                key=lambda p: (versao_ordem(p.versao or ''), p.data_importacao or datetime.min)
+            )
+            versions = [p for p in reversed(itens_ordenados) if p.id != current.id]
+            grupos_lista.append({'current': current, 'versions': versions})
 
     hoje = date.today()
     limite_vencendo = hoje + timedelta(days=7)
@@ -396,14 +455,14 @@ def listagem():
         pending_imports = max(upload_total - upload_done, 0)
     skip_backfill = pending_imports > 0
 
-    for proposta in propostas:
+    for proposta in propostas_para_backfill:
         # Backfill de data de vencimento se faltar
         if not proposta.data_vencimento and proposta.data_emissao:
             data_emissao_date = parse_date_br(proposta.data_emissao)
             if data_emissao_date:
                 proposta.data_vencimento = data_emissao_date + timedelta(days=30)
                 alterou = True
-        
+
         # Backfill de cod pelo nome do arquivo
         if not proposta.cod_vendedor and proposta.nome_arquivo_pdf:
             cod = extract_cod_from_filename(proposta.nome_arquivo_pdf)
@@ -411,7 +470,7 @@ def listagem():
                 proposta.cod_vendedor = cod
                 alterou = True
 
-        # Backfill de serviços/garantia se faltar
+        # Backfill de servicos/garantia se faltar
         needs_backfill = any([
             proposta.instalacao_status is None,
             proposta.qualificacoes_status is None,
@@ -466,68 +525,14 @@ def listagem():
     if alterou:
         db.session.commit()
 
-    # Agrupar por proposta base (versões)
-    grupos = {}
-    for proposta in propostas:
-        base_id = proposta.id_proposta_base or proposta.id_proposta
-        grupos.setdefault(base_id, []).append(proposta)
-
-    grupos_lista = []
-    for base_id, itens in grupos.items():
-        itens_ordenados = sorted(
-            itens,
-            key=lambda p: (versao_ordem(p.versao or ''), p.data_importacao or datetime.min)
-        )
-        current = itens_ordenados[-1]
-        anteriores = list(reversed(itens_ordenados[:-1]))
-        grupos_lista.append({'current': current, 'versions': anteriores})
-
-    # Ordenar grupos pelo campo escolhido (apenas proposta atual)
-    allowed_sorts = {
-        'id_proposta',
-        'razao_social',
-        'cnpj',
-        'data_emissao',
-        'data_vencimento',
-        'cod_vendedor',
-        'status'
-    }
-    if sort not in allowed_sorts:
-        sort = 'id_proposta'
-
-    def _sort_key(grupo):
-        proposta = grupo['current']
-        if sort == 'data_emissao':
-            return parse_date_br(proposta.data_emissao) or date.min
-        if sort == 'data_vencimento':
-            return proposta.data_vencimento or date.min
-        if sort == 'status':
-            return (proposta.observacoes or '').lower()
-        if sort == 'cnpj':
-            return (proposta.cnpj or '').lower()
-        if sort == 'razao_social':
-            return (proposta.razao_social or '').lower()
-        if sort == 'cod_vendedor':
-            return (proposta.cod_vendedor or '').lower()
-        return (proposta.id_proposta or '').lower()
-
-    grupos_lista.sort(key=_sort_key, reverse=(order == 'desc'))
-
-    total_propostas = len(grupos_lista)
-    total_pages = max(ceil(total_propostas / per_page), 1)
-    if page > total_pages:
-        page = total_pages
-    start_idx = (page - 1) * per_page
-    end_idx = start_idx + per_page
-    grupos_paginados = grupos_lista[start_idx:end_idx]
-    total_ganhas = sum(1 for g in grupos_lista if g['current'].observacoes == 'Ganha')
-    total_perdidas = sum(1 for g in grupos_lista if g['current'].observacoes == 'Perdida')
-    total_abertas = sum(1 for g in grupos_lista if g['current'].observacoes == 'Em negociação')
-    total_vencidas_dashboard = sum(1 for g in grupos_lista if g['current'].observacoes == 'Vencida')
+    total_ganhas = current_query.filter(Proposta.observacoes == 'Ganha').count()
+    total_perdidas = current_query.filter(Proposta.observacoes == 'Perdida').count()
+    total_abertas = current_query.filter(Proposta.observacoes == 'Em negociação').count()
+    total_vencidas_dashboard = current_query.filter(Proposta.observacoes == 'Vencida').count()
     total_vencidas = total_vencidas_dashboard
-    
+
     return render_template('listagem.html', 
-                         grupos=grupos_paginados,
+                         grupos=grupos_lista,
                          filtros={
                              'razao_social': razao_social,
                              'cnpj': cnpj,
