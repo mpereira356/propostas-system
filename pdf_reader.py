@@ -203,10 +203,10 @@ class PropostaExtractor:
     
     def extract_data_emissao(self):
         """Extrai a data de emissão"""
-        pattern = r'\d{2}/[A-Z]{3}/\d{2,4}'
-        match = re.search(pattern, self.text[:500])
+        pattern = r'(\d{2})\s*/\s*([A-Z]{3})\s*/\s*(\d{2,4})'
+        match = re.search(pattern, self.text[:1000], re.IGNORECASE)
         if match:
-            date_str = match.group(0)
+            day, mon, year = match.group(1), match.group(2), match.group(3)
             # Converter formato 17/JAN/25 para datetime
             try:
                 meses = {
@@ -214,15 +214,12 @@ class PropostaExtractor:
                     'MAI': '05', 'JUN': '06', 'JUL': '07', 'AGO': '08',
                     'SET': '09', 'OUT': '10', 'NOV': '11', 'DEZ': '12'
                 }
-                parts = date_str.split('/')
-                day = parts[0]
-                month = meses.get(parts[1], '01')
-                year = parts[2]
+                month = meses.get(mon.upper(), '01')
                 if len(year) == 2:
                     year = '20' + year
                 return f"{day}/{month}/{year}"
             except:
-                return date_str
+                return f"{day}/{mon}/{year}"
         return None
     
     def extract_validade(self):
@@ -236,34 +233,34 @@ class PropostaExtractor:
             return f"{match.group(1)} DIAS"
 
         # Ex.: "Validade: 30 DIAS" ou "Validade da Proposta: 30 dias corridos"
-        pattern = r'Validade[^\\d]{0,20}(\\d{1,3})\\s*DIAS'
+        pattern = r'Validade[^\d]{0,20}(\d{1,3})\s*DIAS'
         match = re.search(pattern, texto, re.IGNORECASE)
         if match:
             return f"{match.group(1)} DIAS"
 
         # Ex.: "Validade: Até 30.05.2025" ou "Validade: 30/05/2025"
-        pattern = r'Validade[^\\d]{0,20}(?:At[eé]\\s*)?(\\d{2}[./]\\d{2}[./]\\d{2,4})'
+        pattern = r'Validade[^\d]{0,20}(?:At[eé]\s*)?(\d{2}\s*[./]\s*\d{2}\s*[./]\s*\d{2,4})'
         match = re.search(pattern, texto, re.IGNORECASE)
         if match:
-            date_str = match.group(1).replace('.', '/')
+            date_str = re.sub(r'\s+', '', match.group(1)).replace('.', '/')
             return date_str
 
         # Ex.: "Válida até 30/05/2025"
-        pattern = r'V[aá]lida\\s+at[eé]\\s*(\\d{2}[./]\\d{2}[./]\\d{2,4})'
+        pattern = r'V[aá]lida\s+at[eé]\s*(\d{2}\s*[./]\s*\d{2}\s*[./]\s*\d{2,4})'
         match = re.search(pattern, texto, re.IGNORECASE)
         if match:
-            date_str = match.group(1).replace('.', '/')
+            date_str = re.sub(r'\s+', '', match.group(1)).replace('.', '/')
             return date_str
 
         # Fallback por linha com "Validade"
         for line in self.lines:
             if re.search(r'Validade', line, re.IGNORECASE):
-                match = re.search(r'(\\d{1,3})\\s*DIAS', line, re.IGNORECASE)
+                match = re.search(r'(\d{1,3})\s*DIAS', line, re.IGNORECASE)
                 if match:
                     return f"{match.group(1)} DIAS"
-                match = re.search(r'(\\d{2}[./]\\d{2}[./]\\d{2,4})', line)
+                match = re.search(r'(\d{2}\s*[./]\s*\d{2}\s*[./]\s*\d{2,4})', line)
                 if match:
-                    return match.group(1).replace('.', '/')
+                    return re.sub(r'\s+', '', match.group(1)).replace('.', '/')
 
         return None
     
@@ -291,15 +288,19 @@ class PropostaExtractor:
 
     def extract_tipo(self):
         """Detecta tipo da proposta baseado em MP BIOS ou BAUMER."""
-        if re.search(r'\\bMP\\s*BIOS\\b', self.text, re.IGNORECASE) or re.search(r'\\bMPBIOS\\b', self.text, re.IGNORECASE):
+        filename = os.path.basename(self.pdf_path)
+        if re.search(r'(^|[^A-Za-z0-9])MP\s*BIOS([^A-Za-z0-9]|$)', filename, re.IGNORECASE) or re.search(r'(^|[^A-Za-z0-9])MPBIOS([^A-Za-z0-9]|$)', filename, re.IGNORECASE):
             return 'Serviço'
-        if re.search(r'\\bBAUMER\\b', self.text, re.IGNORECASE):
+        if re.search(r'(^|[^A-Za-z0-9])BAUMER([^A-Za-z0-9]|$)', filename, re.IGNORECASE):
             return 'Produto'
 
-        filename = os.path.basename(self.pdf_path)
-        if re.search(r'\\bMP\\s*BIOS\\b', filename, re.IGNORECASE) or re.search(r'\\bMPBIOS\\b', filename, re.IGNORECASE):
+        has_mp = re.search(r'(^|[^A-Za-z0-9])MP\s*BIOS([^A-Za-z0-9]|$)', self.text, re.IGNORECASE) or re.search(r'(^|[^A-Za-z0-9])MPBIOS([^A-Za-z0-9]|$)', self.text, re.IGNORECASE)
+        has_baumer = re.search(r'(^|[^A-Za-z0-9])BAUMER([^A-Za-z0-9]|$)', self.text, re.IGNORECASE)
+        if has_mp and not has_baumer:
             return 'Serviço'
-        if re.search(r'\\bBAUMER\\b', filename, re.IGNORECASE):
+        if has_baumer and not has_mp:
+            return 'Produto'
+        if has_baumer:
             return 'Produto'
         return None
     

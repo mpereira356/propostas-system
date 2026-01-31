@@ -46,7 +46,9 @@ def process_pdf(filepath, filename_original, filename):
 
         cod_vendedor = extract_cod_from_filename(filename_original)
         data_emissao_date = parse_date_br(dados.get('data_emissao'))
-        data_vencimento = data_emissao_date + timedelta(days=30) if data_emissao_date else None
+        data_vencimento = compute_data_vencimento(dados.get('validade'), data_emissao_date)
+        if not data_vencimento and data_emissao_date:
+            data_vencimento = data_emissao_date + timedelta(days=30)
 
         proposta_existente = Proposta.query.filter_by(nome_arquivo_pdf=filename).first()
 
@@ -239,10 +241,31 @@ def extract_tipo_from_filename(filename):
     if not filename:
         return None
     name = os.path.basename(filename)
-    if re.search(r'\bMP\s*BIOS\b', name, re.IGNORECASE) or re.search(r'\bMPBIOS\b', name, re.IGNORECASE):
+    if re.search(r'(^|[^A-Za-z0-9])MP\s*BIOS([^A-Za-z0-9]|$)', name, re.IGNORECASE) or re.search(r'(^|[^A-Za-z0-9])MPBIOS([^A-Za-z0-9]|$)', name, re.IGNORECASE):
         return 'Serviço'
-    if re.search(r'\bBAUMER\b', name, re.IGNORECASE):
+    if re.search(r'(^|[^A-Za-z0-9])BAUMER([^A-Za-z0-9]|$)', name, re.IGNORECASE):
         return 'Produto'
+    return None
+
+
+def compute_data_vencimento(validade, data_emissao_date):
+    """Calcula data de vencimento a partir da validade."""
+    if validade:
+        match = re.search(r'(\d{2})\s*[./]\s*(\d{2})\s*[./]\s*(\d{2,4})', validade)
+        if match:
+            dia, mes, ano = match.groups()
+            if len(ano) == 2:
+                ano = '20' + ano
+            try:
+                return date(int(ano), int(mes), int(dia))
+            except Exception:
+                return None
+        match = re.search(r'(\d{1,3})\s*DIAS', validade, re.IGNORECASE)
+        if match and data_emissao_date:
+            try:
+                return data_emissao_date + timedelta(days=int(match.group(1)))
+            except Exception:
+                return None
     return None
 
 
@@ -539,8 +562,11 @@ def listagem():
         # Backfill de data de vencimento se faltar
         if not proposta.data_vencimento and proposta.data_emissao:
             data_emissao_date = parse_date_br(proposta.data_emissao)
-            if data_emissao_date:
-                proposta.data_vencimento = data_emissao_date + timedelta(days=30)
+            data_vencimento = compute_data_vencimento(proposta.validade, data_emissao_date)
+            if not data_vencimento and data_emissao_date:
+                data_vencimento = data_emissao_date + timedelta(days=30)
+            if data_vencimento:
+                proposta.data_vencimento = data_vencimento
                 alterou = True
 
         # Backfill de cod pelo nome do arquivo
@@ -1258,12 +1284,18 @@ def reprocessar_pdf(id):
             flash('Não foi possível extrair informações do PDF.', 'warning')
             return redirect(url_for('listagem'))
 
+        proposta.data_emissao = dados.get('data_emissao') or proposta.data_emissao
+        proposta.validade = dados.get('validade') or proposta.validade
         proposta.instalacao_status = dados.get('instalacao_status') or proposta.instalacao_status
         proposta.qualificacoes_status = dados.get('qualificacoes_status') or proposta.qualificacoes_status
         proposta.treinamento_status = dados.get('treinamento_status') or proposta.treinamento_status
         proposta.garantia_resumo = dados.get('garantia_resumo') or proposta.garantia_resumo
         proposta.garantia_texto = dados.get('garantia_texto') or proposta.garantia_texto
-        proposta.tipo = dados.get('tipo') or proposta.tipo
+        proposta.tipo = dados.get('tipo') or proposta.tipo or extract_tipo_from_filename(proposta.nome_arquivo_pdf)
+        data_emissao_date = parse_date_br(proposta.data_emissao)
+        data_vencimento = compute_data_vencimento(proposta.validade, data_emissao_date)
+        if data_vencimento:
+            proposta.data_vencimento = data_vencimento
 
         db.session.commit()
         flash('PDF reprocessado com sucesso!', 'success')
@@ -1291,12 +1323,18 @@ def reprocessar_todos():
             dados = extractor.extract_all()
             if not dados:
                 continue
+            proposta.data_emissao = dados.get('data_emissao') or proposta.data_emissao
+            proposta.validade = dados.get('validade') or proposta.validade
             proposta.instalacao_status = dados.get('instalacao_status') or proposta.instalacao_status
             proposta.qualificacoes_status = dados.get('qualificacoes_status') or proposta.qualificacoes_status
             proposta.treinamento_status = dados.get('treinamento_status') or proposta.treinamento_status
             proposta.garantia_resumo = dados.get('garantia_resumo') or proposta.garantia_resumo
             proposta.garantia_texto = dados.get('garantia_texto') or proposta.garantia_texto
-            proposta.tipo = dados.get('tipo') or proposta.tipo
+            proposta.tipo = dados.get('tipo') or proposta.tipo or extract_tipo_from_filename(proposta.nome_arquivo_pdf)
+            data_emissao_date = parse_date_br(proposta.data_emissao)
+            data_vencimento = compute_data_vencimento(proposta.validade, data_emissao_date)
+            if data_vencimento:
+                proposta.data_vencimento = data_vencimento
             total += 1
             atualizados += 1
         except Exception:
