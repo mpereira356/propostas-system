@@ -39,7 +39,8 @@ def process_pdf(filepath, filename_original, filename):
     try:
         extractor = PropostaExtractor(filepath)
         dados = extractor.extract_all()
-        if not dados or not dados.get('id_proposta'):
+        base_id = extract_base_id_from_filename(filename_original or filename)
+        if not dados or (not dados.get('id_proposta') and not base_id):
             print(f"Falha ao extrair dados do PDF: {filename_original}")
             return
 
@@ -47,18 +48,19 @@ def process_pdf(filepath, filename_original, filename):
         data_emissao_date = parse_date_br(dados.get('data_emissao'))
         data_vencimento = data_emissao_date + timedelta(days=30) if data_emissao_date else None
 
-        proposta_existente = Proposta.query.filter_by(
-            id_proposta=dados['id_proposta']
-        ).first()
+        proposta_existente = Proposta.query.filter_by(nome_arquivo_pdf=filename).first()
 
         if proposta_existente:
             print(f"Proposta já importada: {dados['id_proposta']}")
             return
 
+        versao = extract_version_from_filename(filename_original or filename)
+        id_proposta = ensure_unique_id_proposta(dados.get('id_proposta'), base_id, filename_original or filename)
+
         proposta = Proposta(
             razao_social=dados.get('razao_social'),
             nome_fantasia=dados.get('nome_fantasia'),
-            id_proposta=dados.get('id_proposta'),
+            id_proposta=id_proposta or dados.get('id_proposta'),
             data_emissao=dados.get('data_emissao'),
             validade=dados.get('validade'),
             cnpj=dados.get('cnpj'),
@@ -79,7 +81,6 @@ def process_pdf(filepath, filename_original, filename):
             garantia_texto=dados.get('garantia_texto'),
             observacoes='Em negociação'
         )
-        base_id, versao = split_proposta_id(dados.get('id_proposta'))
         proposta.id_proposta_base = base_id
         proposta.versao = versao
 
@@ -170,6 +171,62 @@ def extract_cod_from_filename(filename):
     if match:
         return match.group(1)
     return None
+
+
+def extract_base_id_from_filename(filename):
+    """Extrai os 3 primeiros dígitos do nome do arquivo como base da proposta."""
+    if not filename:
+        return None
+    name = os.path.basename(filename)
+    match = re.match(r'^\s*(\d{3})', name)
+    if not match:
+        return None
+    return match.group(1)
+
+
+def extract_version_from_filename(filename):
+    """Extrai um sufixo curto de versão após os 3 dígitos iniciais."""
+    if not filename:
+        return ''
+    name = os.path.splitext(os.path.basename(filename))[0]
+    match = re.match(r'^\s*\d{3}(.*)$', name)
+    if not match:
+        return ''
+    tail = match.group(1)
+    parts = re.split(r'[\s_.-]+', tail)
+    for part in parts:
+        cleaned = re.sub(r'[^A-Za-z0-9]', '', part)
+        if cleaned:
+            return cleaned[:5].upper()
+    return ''
+
+
+def ensure_unique_id_proposta(candidate_id, base_id, filename):
+    """Garante que o id_proposta seja único; usa base/sufixo do arquivo se necessário."""
+    candidate = candidate_id or base_id
+    if not candidate:
+        return None
+    if not Proposta.query.filter_by(id_proposta=candidate).first():
+        return candidate
+
+    suffix = extract_version_from_filename(filename)
+    if base_id and suffix:
+        candidate = f"{base_id}-{suffix}"
+        if not Proposta.query.filter_by(id_proposta=candidate).first():
+            return candidate
+
+    base = base_id or re.sub(r'\s+', '', (candidate_id or 'PROP'))[:10]
+    base = re.sub(r'[^A-Za-z0-9-]', '', base) or 'PROP'
+    name = os.path.splitext(os.path.basename(filename or ''))[0]
+    name = re.sub(r'[^A-Za-z0-9-]', '', name)[:10]
+    seed = f"{base}-{name}" if name else base
+    seed = seed[:45]
+    attempt = seed
+    counter = 1
+    while Proposta.query.filter_by(id_proposta=attempt).first():
+        attempt = f"{seed}-{counter}"
+        counter += 1
+    return attempt
 
 
 def split_proposta_id(id_proposta):
@@ -507,11 +564,17 @@ def listagem():
             elif proposta.data_vencimento <= limite_vencendo:
                 proposta.vencendo = True
 
-        # Backfill base/versao
-        if not proposta.id_proposta_base:
-            base_id, versao = split_proposta_id(proposta.id_proposta)
+        # Backfill base/versao com base nos 3 primeiros dígitos do arquivo
+        base_id = extract_base_id_from_filename(proposta.nome_arquivo_pdf) if proposta.nome_arquivo_pdf else None
+        versao = extract_version_from_filename(proposta.nome_arquivo_pdf) if proposta.nome_arquivo_pdf else None
+        if base_id and proposta.id_proposta_base != base_id:
             proposta.id_proposta_base = base_id
-            proposta.versao = versao
+            proposta.versao = versao or proposta.versao
+            alterou = True
+        elif not proposta.id_proposta_base:
+            base_id_fallback, versao_fallback = split_proposta_id(proposta.id_proposta)
+            proposta.id_proposta_base = base_id_fallback
+            proposta.versao = proposta.versao or versao_fallback
             alterou = True
 
         if proposta.vencida:
