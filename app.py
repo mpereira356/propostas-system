@@ -1160,6 +1160,41 @@ def atualizar_observacoes(id):
     return redirect(url_for('listagem'))
 
 
+@app.route('/reprocessar_pdf/<int:id>', methods=['POST'])
+def reprocessar_pdf(id):
+    """Reprocessa o PDF da proposta e atualiza campos extraídos."""
+    proposta = Proposta.query.get_or_404(id)
+    if not proposta.nome_arquivo_pdf:
+        flash('Proposta sem PDF associado.', 'warning')
+        return redirect(url_for('listagem'))
+
+    pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], proposta.nome_arquivo_pdf)
+    if not os.path.exists(pdf_path):
+        flash('Arquivo PDF não encontrado no servidor.', 'danger')
+        return redirect(url_for('listagem'))
+
+    try:
+        extractor = PropostaExtractor(pdf_path)
+        dados = extractor.extract_all()
+        if not dados:
+            flash('Não foi possível extrair informações do PDF.', 'warning')
+            return redirect(url_for('listagem'))
+
+        proposta.instalacao_status = dados.get('instalacao_status') or proposta.instalacao_status
+        proposta.qualificacoes_status = dados.get('qualificacoes_status') or proposta.qualificacoes_status
+        proposta.treinamento_status = dados.get('treinamento_status') or proposta.treinamento_status
+        proposta.garantia_resumo = dados.get('garantia_resumo') or proposta.garantia_resumo
+        proposta.garantia_texto = dados.get('garantia_texto') or proposta.garantia_texto
+
+        db.session.commit()
+        flash('PDF reprocessado com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao reprocessar PDF: {str(e)}', 'danger')
+
+    return redirect(url_for('listagem'))
+
+
 @app.route('/deletar/<int:id>', methods=['POST'])
 def deletar(id):
     """Deletar uma proposta"""

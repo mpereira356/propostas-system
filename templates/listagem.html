@@ -399,6 +399,11 @@
                                                 <a href="{{ url_for('editar', id=proposta.id) }}" class="dropdown-item">Editar</a>
                                             </li>
                                             <li>
+                                                <form method="POST" action="{{ url_for('reprocessar_pdf', id=proposta.id) }}">
+                                                    <button type="submit" class="dropdown-item">Reprocessar PDF</button>
+                                                </form>
+                                            </li>
+                                            <li>
                                                 <button type="button"
                                                         class="dropdown-item text-danger"
                                                         onclick="confirmarDelete({{ proposta.id }}, '{{ proposta.id_proposta }}')">
@@ -481,6 +486,11 @@
                                                 {% endif %}
                                                 <li>
                                                     <a href="{{ url_for('editar', id=versao.id) }}" class="dropdown-item">Editar</a>
+                                                </li>
+                                                <li>
+                                                    <form method="POST" action="{{ url_for('reprocessar_pdf', id=versao.id) }}">
+                                                        <button type="submit" class="dropdown-item">Reprocessar PDF</button>
+                                                    </form>
                                                 </li>
                                                 <li>
                                                     <button type="button"
