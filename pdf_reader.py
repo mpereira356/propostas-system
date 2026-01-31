@@ -457,6 +457,16 @@ class PropostaExtractor:
                 descricao = ' '.join(descricao_parts).strip() or None
                 if descricao:
                     descricao = re.sub(r'(?:\s+\d{1,3}){1,2}$', '', descricao).strip()
+                if descricao:
+                    descricao = re.split(r'\s+(?:Marca/Fabricante|Fabricante|Proced[eê]ncia|Registro|Desconto)\b', descricao, 1, flags=re.IGNORECASE)[0].strip()
+                if descricao:
+                    descricao = re.sub(r'^\d+\s*', '', descricao).strip()
+                if descricao and re.search(r'^(VALOR\s+COM|DESCONTO)\b', descricao, re.IGNORECASE):
+                    i += 1
+                    continue
+                if descricao and len(descricao) < 5:
+                    i += 1
+                    continue
                 if descricao and skip_prefix.search(descricao):
                     i += 1
                     continue
