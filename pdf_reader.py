@@ -227,24 +227,44 @@ class PropostaExtractor:
     
     def extract_validade(self):
         """Extrai a validade da proposta"""
+        texto = self.text[:2000]
+
         # Ex.: "30 (TRINTA) DIAS"
-        pattern = r'(\d+)\s*\([A-Z]+\)\s*DIAS'
-        match = re.search(pattern, self.text[:500], re.IGNORECASE)
+        pattern = r'(\d{1,3})\s*\([A-Z]+\)\s*DIAS'
+        match = re.search(pattern, texto, re.IGNORECASE)
         if match:
             return f"{match.group(1)} DIAS"
 
-        # Ex.: "Validade: 30 DIAS"
-        pattern = r'Validade:\s*(\d+)\s*DIAS'
-        match = re.search(pattern, self.text[:500], re.IGNORECASE)
+        # Ex.: "Validade: 30 DIAS" ou "Validade da Proposta: 30 dias corridos"
+        pattern = r'Validade[^\\d]{0,20}(\\d{1,3})\\s*DIAS'
+        match = re.search(pattern, texto, re.IGNORECASE)
         if match:
             return f"{match.group(1)} DIAS"
 
         # Ex.: "Validade: Até 30.05.2025" ou "Validade: 30/05/2025"
-        pattern = r'Validade:\s*(?:Até\s*)?(\d{2}[./]\d{2}[./]\d{4})'
-        match = re.search(pattern, self.text[:500], re.IGNORECASE)
+        pattern = r'Validade[^\\d]{0,20}(?:At[eé]\\s*)?(\\d{2}[./]\\d{2}[./]\\d{2,4})'
+        match = re.search(pattern, texto, re.IGNORECASE)
         if match:
             date_str = match.group(1).replace('.', '/')
             return date_str
+
+        # Ex.: "Válida até 30/05/2025"
+        pattern = r'V[aá]lida\\s+at[eé]\\s*(\\d{2}[./]\\d{2}[./]\\d{2,4})'
+        match = re.search(pattern, texto, re.IGNORECASE)
+        if match:
+            date_str = match.group(1).replace('.', '/')
+            return date_str
+
+        # Fallback por linha com "Validade"
+        for line in self.lines:
+            if re.search(r'Validade', line, re.IGNORECASE):
+                match = re.search(r'(\\d{1,3})\\s*DIAS', line, re.IGNORECASE)
+                if match:
+                    return f"{match.group(1)} DIAS"
+                match = re.search(r'(\\d{2}[./]\\d{2}[./]\\d{2,4})', line)
+                if match:
+                    return match.group(1).replace('.', '/')
+
         return None
     
     def extract_razao_social(self):
@@ -267,6 +287,20 @@ class PropostaExtractor:
             # Verificar se não é um campo conhecido
             if not re.search(r'(Nome Fantasia|CNPJ|Telefone|Contato)', razao, re.IGNORECASE):
                 return razao
+        return None
+
+    def extract_tipo(self):
+        """Detecta tipo da proposta baseado em MP BIOS ou BAUMER."""
+        if re.search(r'\\bMP\\s*BIOS\\b', self.text, re.IGNORECASE) or re.search(r'\\bMPBIOS\\b', self.text, re.IGNORECASE):
+            return 'Serviço'
+        if re.search(r'\\bBAUMER\\b', self.text, re.IGNORECASE):
+            return 'Produto'
+
+        filename = os.path.basename(self.pdf_path)
+        if re.search(r'\\bMP\\s*BIOS\\b', filename, re.IGNORECASE) or re.search(r'\\bMPBIOS\\b', filename, re.IGNORECASE):
+            return 'Serviço'
+        if re.search(r'\\bBAUMER\\b', filename, re.IGNORECASE):
+            return 'Produto'
         return None
     
     def extract_nome_fantasia(self):
@@ -488,7 +522,8 @@ class PropostaExtractor:
             'email': self.extract_email(),
             'pessoa_contato': self.extract_pessoa_contato(),
             'itens': self.extract_itens(),
-            'valor_total': self.extract_valor_total()
+            'valor_total': self.extract_valor_total(),
+            'tipo': self.extract_tipo()
         }
 
         # Serviços inclusos e garantia

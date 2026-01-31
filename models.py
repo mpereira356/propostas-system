@@ -34,6 +34,7 @@ class Proposta(db.Model):
     treinamento_status = db.Column(db.String(30))
     garantia_resumo = db.Column(db.Text)
     garantia_texto = db.Column(db.Text)
+    tipo = db.Column(db.String(20))
     observacoes = db.Column(db.String(30))
     id_proposta_base = db.Column(db.String(50))
     versao = db.Column(db.String(5))
@@ -70,6 +71,7 @@ class Proposta(db.Model):
             'treinamento_status': self.treinamento_status,
             'garantia_resumo': self.garantia_resumo,
             'garantia_texto': self.garantia_texto,
+            'tipo': self.tipo,
             'observacoes': self.observacoes,
             'id_proposta_base': self.id_proposta_base,
             'versao': self.versao,

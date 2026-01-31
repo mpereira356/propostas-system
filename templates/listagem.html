@@ -312,6 +312,7 @@
                                         {% if sort == 'cod_vendedor' %}{{ (' &uarr;' if order == 'asc' else ' &darr;') | safe }}{% endif %}
                                     </a>
                                 </th>
+                                <th>Tipo</th>
                                 <th>
                                     <a class="text-white text-decoration-none" href="{{ url_for('listagem', razao_social=filtros.razao_social, cnpj=filtros.cnpj, id_proposta=filtros.id_proposta, cod_vendedor=filtros.cod_vendedor, per_page=per_page, sort='status', order=('desc' if sort=='status' and order=='asc' else 'asc'), page=1) }}">
                                         Status
@@ -355,6 +356,7 @@
                                         </form>
                                     {% endif %}
                                 </td>
+                                <td>{{ proposta.tipo or 'Não informado' }}</td>
                                 <td>
                                     {% if proposta.observacoes == 'Ganha' %}
                                         <span class="badge text-bg-success">Ganha</span>
@@ -444,6 +446,7 @@
                                             </form>
                                         {% endif %}
                                     </td>
+                                    <td>{{ versao.tipo or 'Não informado' }}</td>
                                     <td>
                                         {% if versao.observacoes == 'Ganha' %}
                                             <span class="badge text-bg-success">Ganha</span>

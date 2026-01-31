@@ -57,8 +57,11 @@ def process_pdf(filepath, filename_original, filename):
         versao = extract_version_from_filename(filename_original or filename)
         id_proposta = ensure_unique_id_proposta(dados.get('id_proposta'), base_id, filename_original or filename)
 
+        razao_social = dados.get('razao_social')
+        razao_social = razao_social.upper() if isinstance(razao_social, str) and razao_social.strip() else razao_social
+
         proposta = Proposta(
-            razao_social=dados.get('razao_social'),
+            razao_social=razao_social,
             nome_fantasia=dados.get('nome_fantasia'),
             id_proposta=id_proposta or dados.get('id_proposta'),
             data_emissao=dados.get('data_emissao'),
@@ -79,6 +82,7 @@ def process_pdf(filepath, filename_original, filename):
             treinamento_status=dados.get('treinamento_status'),
             garantia_resumo=dados.get('garantia_resumo'),
             garantia_texto=dados.get('garantia_texto'),
+            tipo=dados.get('tipo'),
             observacoes='Em negociação'
         )
         proposta.id_proposta_base = base_id
@@ -269,6 +273,8 @@ def ensure_schema():
             conn.execute(text("ALTER TABLE propostas ADD COLUMN garantia_resumo TEXT"))
         if 'garantia_texto' not in existing:
             conn.execute(text("ALTER TABLE propostas ADD COLUMN garantia_texto TEXT"))
+        if 'tipo' not in existing:
+            conn.execute(text("ALTER TABLE propostas ADD COLUMN tipo VARCHAR(20)"))
         if 'observacoes' not in existing:
             conn.execute(text("ALTER TABLE propostas ADD COLUMN observacoes VARCHAR(30)"))
         if 'id_proposta_base' not in existing:
@@ -526,6 +532,11 @@ def listagem():
             if cod:
                 proposta.cod_vendedor = cod
                 alterou = True
+        if proposta.razao_social:
+            razao_upper = proposta.razao_social.upper()
+            if proposta.razao_social != razao_upper:
+                proposta.razao_social = razao_upper
+                alterou = True
 
         # Backfill de servicos/garantia se faltar
         needs_backfill = any([
@@ -533,7 +544,8 @@ def listagem():
             proposta.qualificacoes_status is None,
             proposta.treinamento_status is None,
             proposta.garantia_resumo is None,
-            proposta.garantia_texto is None
+            proposta.garantia_texto is None,
+            proposta.tipo is None
         ])
         if needs_backfill and proposta.nome_arquivo_pdf and backfill_remaining > 0 and not skip_backfill:
             pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], proposta.nome_arquivo_pdf)
@@ -551,6 +563,8 @@ def listagem():
                         proposta.garantia_resumo = dados.get('garantia_resumo') or 'Nao informado'
                     if proposta.garantia_texto is None:
                         proposta.garantia_texto = dados.get('garantia_texto') or 'Nao informado'
+                    if proposta.tipo is None:
+                        proposta.tipo = dados.get('tipo') or proposta.tipo
                     alterou = True
             backfill_remaining -= 1
 
@@ -1179,7 +1193,8 @@ def editar(id):
         proposta.validade = request.form.get('validade', '').strip() or proposta.validade
         proposta.cod_vendedor = request.form.get('cod_vendedor', '').strip() or proposta.cod_vendedor
 
-        proposta.razao_social = request.form.get('razao_social', '').strip() or proposta.razao_social
+        razao_social = request.form.get('razao_social', '').strip()
+        proposta.razao_social = razao_social.upper() if razao_social else proposta.razao_social
         proposta.nome_fantasia = request.form.get('nome_fantasia', '').strip() or proposta.nome_fantasia
         proposta.cnpj = request.form.get('cnpj', '').strip() or proposta.cnpj
         proposta.telefone = request.form.get('telefone', '').strip() or proposta.telefone
@@ -1248,6 +1263,7 @@ def reprocessar_pdf(id):
         proposta.treinamento_status = dados.get('treinamento_status') or proposta.treinamento_status
         proposta.garantia_resumo = dados.get('garantia_resumo') or proposta.garantia_resumo
         proposta.garantia_texto = dados.get('garantia_texto') or proposta.garantia_texto
+        proposta.tipo = dados.get('tipo') or proposta.tipo
 
         db.session.commit()
         flash('PDF reprocessado com sucesso!', 'success')
@@ -1280,6 +1296,7 @@ def reprocessar_todos():
             proposta.treinamento_status = dados.get('treinamento_status') or proposta.treinamento_status
             proposta.garantia_resumo = dados.get('garantia_resumo') or proposta.garantia_resumo
             proposta.garantia_texto = dados.get('garantia_texto') or proposta.garantia_texto
+            proposta.tipo = dados.get('tipo') or proposta.tipo
             total += 1
             atualizados += 1
         except Exception:
