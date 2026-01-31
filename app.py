@@ -269,6 +269,20 @@ def compute_data_vencimento(validade, data_emissao_date):
     return None
 
 
+def clean_info(value):
+    """Normaliza valores 'Não informado' para None."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        text = value.strip()
+        if not text:
+            return None
+        lower = text.lower()
+        if lower in ('nao informado', 'não informado', 'nao informado.'):
+            return None
+    return value
+
+
 def split_proposta_id(id_proposta):
     """Retorna (base_id, versao) a partir do ID da proposta."""
     if not id_proposta:
@@ -582,7 +596,7 @@ def listagem():
                 alterou = True
 
         # Backfill leve para tipo (sem abrir PDF)
-        if proposta.tipo is None and proposta.nome_arquivo_pdf:
+        if (proposta.tipo is None or clean_info(proposta.tipo) is None) and proposta.nome_arquivo_pdf:
             tipo = extract_tipo_from_filename(proposta.nome_arquivo_pdf)
             if tipo:
                 proposta.tipo = tipo
@@ -1284,14 +1298,14 @@ def reprocessar_pdf(id):
             flash('Não foi possível extrair informações do PDF.', 'warning')
             return redirect(url_for('listagem'))
 
-        proposta.data_emissao = dados.get('data_emissao') or proposta.data_emissao
-        proposta.validade = dados.get('validade') or proposta.validade
-        proposta.instalacao_status = dados.get('instalacao_status') or proposta.instalacao_status
-        proposta.qualificacoes_status = dados.get('qualificacoes_status') or proposta.qualificacoes_status
-        proposta.treinamento_status = dados.get('treinamento_status') or proposta.treinamento_status
-        proposta.garantia_resumo = dados.get('garantia_resumo') or proposta.garantia_resumo
-        proposta.garantia_texto = dados.get('garantia_texto') or proposta.garantia_texto
-        proposta.tipo = dados.get('tipo') or proposta.tipo or extract_tipo_from_filename(proposta.nome_arquivo_pdf)
+        proposta.data_emissao = clean_info(dados.get('data_emissao')) or proposta.data_emissao
+        proposta.validade = clean_info(dados.get('validade')) or proposta.validade
+        proposta.instalacao_status = clean_info(dados.get('instalacao_status')) or proposta.instalacao_status
+        proposta.qualificacoes_status = clean_info(dados.get('qualificacoes_status')) or proposta.qualificacoes_status
+        proposta.treinamento_status = clean_info(dados.get('treinamento_status')) or proposta.treinamento_status
+        proposta.garantia_resumo = clean_info(dados.get('garantia_resumo')) or proposta.garantia_resumo
+        proposta.garantia_texto = clean_info(dados.get('garantia_texto')) or proposta.garantia_texto
+        proposta.tipo = clean_info(dados.get('tipo')) or clean_info(proposta.tipo) or extract_tipo_from_filename(proposta.nome_arquivo_pdf)
         data_emissao_date = parse_date_br(proposta.data_emissao)
         data_vencimento = compute_data_vencimento(proposta.validade, data_emissao_date)
         if data_vencimento:
@@ -1323,14 +1337,14 @@ def reprocessar_todos():
             dados = extractor.extract_all()
             if not dados:
                 continue
-            proposta.data_emissao = dados.get('data_emissao') or proposta.data_emissao
-            proposta.validade = dados.get('validade') or proposta.validade
-            proposta.instalacao_status = dados.get('instalacao_status') or proposta.instalacao_status
-            proposta.qualificacoes_status = dados.get('qualificacoes_status') or proposta.qualificacoes_status
-            proposta.treinamento_status = dados.get('treinamento_status') or proposta.treinamento_status
-            proposta.garantia_resumo = dados.get('garantia_resumo') or proposta.garantia_resumo
-            proposta.garantia_texto = dados.get('garantia_texto') or proposta.garantia_texto
-            proposta.tipo = dados.get('tipo') or proposta.tipo or extract_tipo_from_filename(proposta.nome_arquivo_pdf)
+            proposta.data_emissao = clean_info(dados.get('data_emissao')) or proposta.data_emissao
+            proposta.validade = clean_info(dados.get('validade')) or proposta.validade
+            proposta.instalacao_status = clean_info(dados.get('instalacao_status')) or proposta.instalacao_status
+            proposta.qualificacoes_status = clean_info(dados.get('qualificacoes_status')) or proposta.qualificacoes_status
+            proposta.treinamento_status = clean_info(dados.get('treinamento_status')) or proposta.treinamento_status
+            proposta.garantia_resumo = clean_info(dados.get('garantia_resumo')) or proposta.garantia_resumo
+            proposta.garantia_texto = clean_info(dados.get('garantia_texto')) or proposta.garantia_texto
+            proposta.tipo = clean_info(dados.get('tipo')) or clean_info(proposta.tipo) or extract_tipo_from_filename(proposta.nome_arquivo_pdf)
             data_emissao_date = parse_date_br(proposta.data_emissao)
             data_vencimento = compute_data_vencimento(proposta.validade, data_emissao_date)
             if data_vencimento:
