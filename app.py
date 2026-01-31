@@ -1276,7 +1276,16 @@ def detalhes(id):
     """Página de detalhes de uma proposta"""
     proposta = Proposta.query.get_or_404(id)
     itens = ItemProposta.query.filter_by(proposta_id=id).all()
-    return render_template('detalhes.html', proposta=proposta, itens=itens)
+    total_itens = 0.0
+    for item in itens:
+        if not item.valor_total:
+            continue
+        try:
+            valor = item.valor_total.replace('.', '').replace(',', '.')
+            total_itens += float(valor)
+        except Exception:
+            continue
+    return render_template('detalhes.html', proposta=proposta, itens=itens, total_itens=total_itens)
 
 
 @app.route('/uploads/<path:filename>')

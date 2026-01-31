@@ -455,6 +455,8 @@ class PropostaExtractor:
                     descricao_parts.append(parte_antes)
 
                 descricao = ' '.join(descricao_parts).strip() or None
+                if descricao:
+                    descricao = re.sub(r'(?:\s+\d{1,3}){1,2}$', '', descricao).strip()
                 if descricao and skip_prefix.search(descricao):
                     i += 1
                     continue

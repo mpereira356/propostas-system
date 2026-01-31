@@ -194,7 +194,13 @@
                                 <td colspan="4" class="text-end"><strong>TOTAL GERAL:</strong></td>
                                 <td class="text-end">
                                     <strong class="text-success fs-5">
-                                        R$ {{ proposta.valor_total or '0,00' }}
+                                        {% if proposta.valor_total %}
+                                            R$ {{ proposta.valor_total }}
+                                        {% elif total_itens %}
+                                            R$ {{ "{:,.2f}".format(total_itens).replace(',', 'X').replace('.', ',').replace('X', '.') }}
+                                        {% else %}
+                                            R$ 0,00
+                                        {% endif %}
                                     </strong>
                                 </td>
                             </tr>
