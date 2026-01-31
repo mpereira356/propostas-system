@@ -27,7 +27,7 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 app.config['MAX_FILES_PER_UPLOAD'] = 10
-app.config['BACKFILL_MAX_PER_REQUEST'] = 3
+app.config['BACKFILL_MAX_PER_REQUEST'] = 0
 
 upload_queue = Queue()
 upload_lock = threading.Lock()
@@ -59,6 +59,7 @@ def process_pdf(filepath, filename_original, filename):
 
         razao_social = dados.get('razao_social')
         razao_social = razao_social.upper() if isinstance(razao_social, str) and razao_social.strip() else razao_social
+        tipo = dados.get('tipo') or extract_tipo_from_filename(filename_original or filename)
 
         proposta = Proposta(
             razao_social=razao_social,
@@ -82,7 +83,7 @@ def process_pdf(filepath, filename_original, filename):
             treinamento_status=dados.get('treinamento_status'),
             garantia_resumo=dados.get('garantia_resumo'),
             garantia_texto=dados.get('garantia_texto'),
-            tipo=dados.get('tipo'),
+            tipo=tipo,
             observacoes='Em negociação'
         )
         proposta.id_proposta_base = base_id
@@ -231,6 +232,18 @@ def ensure_unique_id_proposta(candidate_id, base_id, filename):
         attempt = f"{seed}-{counter}"
         counter += 1
     return attempt
+
+
+def extract_tipo_from_filename(filename):
+    """Detecta tipo pelo nome do arquivo quando o PDF não traz a marca."""
+    if not filename:
+        return None
+    name = os.path.basename(filename)
+    if re.search(r'\bMP\s*BIOS\b', name, re.IGNORECASE) or re.search(r'\bMPBIOS\b', name, re.IGNORECASE):
+        return 'Serviço'
+    if re.search(r'\bBAUMER\b', name, re.IGNORECASE):
+        return 'Produto'
+    return None
 
 
 def split_proposta_id(id_proposta):
@@ -513,11 +526,6 @@ def listagem():
     limite_vencendo = hoje + timedelta(days=7)
     total_vencidas = 0
     alterou = False
-    backfill_remaining = app.config.get('BACKFILL_MAX_PER_REQUEST', 0) or 0
-    with upload_lock:
-        pending_imports = max(upload_total - upload_done, 0)
-    skip_backfill = pending_imports > 0
-
     for proposta in propostas_para_backfill:
         # Backfill de data de vencimento se faltar
         if not proposta.data_vencimento and proposta.data_emissao:
@@ -538,35 +546,12 @@ def listagem():
                 proposta.razao_social = razao_upper
                 alterou = True
 
-        # Backfill de servicos/garantia se faltar
-        needs_backfill = any([
-            proposta.instalacao_status is None,
-            proposta.qualificacoes_status is None,
-            proposta.treinamento_status is None,
-            proposta.garantia_resumo is None,
-            proposta.garantia_texto is None,
-            proposta.tipo is None
-        ])
-        if needs_backfill and proposta.nome_arquivo_pdf and backfill_remaining > 0 and not skip_backfill:
-            pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], proposta.nome_arquivo_pdf)
-            if os.path.exists(pdf_path):
-                extractor = PropostaExtractor(pdf_path)
-                dados = extractor.extract_all()
-                if dados:
-                    if proposta.instalacao_status is None:
-                        proposta.instalacao_status = dados.get('instalacao_status') or 'Nao informado'
-                    if proposta.qualificacoes_status is None:
-                        proposta.qualificacoes_status = dados.get('qualificacoes_status') or 'Nao informado'
-                    if proposta.treinamento_status is None:
-                        proposta.treinamento_status = dados.get('treinamento_status') or 'Nao informado'
-                    if proposta.garantia_resumo is None:
-                        proposta.garantia_resumo = dados.get('garantia_resumo') or 'Nao informado'
-                    if proposta.garantia_texto is None:
-                        proposta.garantia_texto = dados.get('garantia_texto') or 'Nao informado'
-                    if proposta.tipo is None:
-                        proposta.tipo = dados.get('tipo') or proposta.tipo
-                    alterou = True
-            backfill_remaining -= 1
+        # Backfill leve para tipo (sem abrir PDF)
+        if proposta.tipo is None and proposta.nome_arquivo_pdf:
+            tipo = extract_tipo_from_filename(proposta.nome_arquivo_pdf)
+            if tipo:
+                proposta.tipo = tipo
+                alterou = True
 
         # Flags para status de vencimento
         proposta.vencida = False
