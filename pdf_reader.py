@@ -399,22 +399,24 @@ class PropostaExtractor:
         if idx_inicio is None:
             return itens
 
-        # Procurar final da se????o de itens
+        # Procurar final da se????o de itens (somente ap??s o in??cio)
         end_patterns = [
             r'VALOR\s+TOTAL\s+DA\s+PROPOSTA',
             r'TOTAL\s+DA\s+PROPOSTA',
             r'^TOTAL\s+R\$'
         ]
         idx_fim = None
-        for pattern in end_patterns:
-            idx_fim, _ = self.find_line_with(pattern)
-            if idx_fim is not None:
+        for j in range(idx_inicio + 1, len(self.lines)):
+            line = self.lines[j]
+            if any(re.search(pat, line, re.IGNORECASE) for pat in end_patterns):
+                idx_fim = j
                 break
         if idx_fim is None:
             idx_fim = len(self.lines)
 
         # Fallback: se encontrar um novo cabe??alho numerado depois do in??cio
-        heading_pattern = re.compile(r'^\d+(?:\.\d+)?\s+.*$', re.IGNORECASE)
+        # Evitar confundir itens "01 ..." com se??es "2.1 ..."
+        heading_pattern = re.compile(r'^\d+\.\d+\s+.*$', re.IGNORECASE)
         for j in range(idx_inicio + 1, len(self.lines)):
             if heading_pattern.match(self.lines[j]):
                 idx_fim = min(idx_fim, j)
@@ -423,7 +425,7 @@ class PropostaExtractor:
         price_pattern = re.compile(r'R\$\s*([\d.,]+)\s+R\$\s*([\d.,]+)')
         qty_line_pattern = re.compile(r'^(\d{1,3})\s+(\d{1,3})$')
         item_num_pattern = re.compile(r'ITEM\s*(\d{1,3})', re.IGNORECASE)
-        header_ignore = re.compile(r'(It\.\s+Descricao|Qt|Unitario|Sub\s*Total|em\s*R\$|\(em\s*R\$\))', re.IGNORECASE)
+        header_ignore = re.compile(r'(It\.\s+Descricao|Qt|Unitario|Unit\u00e1rio|Valor\s+Unit|Valor\s+Total|Sub\s*Total|em\s*R\$|\(em\s*R\$\))', re.IGNORECASE)
 
         descricao_buffer = []
         i = idx_inicio + 1

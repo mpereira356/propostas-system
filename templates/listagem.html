@@ -118,6 +118,10 @@
                     <i class="bi bi-list-ul"></i> Propostas Importadas
                 </h4>
                 <div class="d-flex gap-2">
+                    <form id="bulkDeleteForm" method="POST" action="{{ url_for('deletar_multiplos') }}" onsubmit="return confirm('Excluir todas as propostas selecionadas?');"></form>
+                    <button type="submit" form="bulkDeleteForm" class="btn btn-outline-danger btn-sm" id="bulkDeleteBtn" disabled>
+                        <i class="bi bi-trash"></i> Excluir Selecionadas
+                    </button>
                     <form method="POST" action="{{ url_for('reprocessar_todos') }}" onsubmit="return confirm('Reprocessar todos os PDFs? Isso pode demorar.');">
                         <button type="submit" class="btn btn-outline-secondary btn-sm">
                             <i class="bi bi-arrow-repeat"></i> Reprocessar PDFs
@@ -276,6 +280,9 @@
                     <table class="table table-hover table-striped">
                         <thead class="table-dark">
                             <tr>
+                                <th class="text-center">
+                                    <input type="checkbox" id="checkAll" class="form-check-input">
+                                </th>
                                 <th>
                                     <a class="text-white text-decoration-none" href="{{ url_for('listagem', razao_social=filtros.razao_social, cnpj=filtros.cnpj, id_proposta=filtros.id_proposta, cod_vendedor=filtros.cod_vendedor, per_page=per_page, sort='id_proposta', order=('desc' if sort=='id_proposta' and order=='asc' else 'asc'), page=1) }}">
                                         ID Proposta
@@ -326,6 +333,9 @@
                             {% for grupo in grupos %}
                             {% set proposta = grupo.current %}
                             <tr class="{% if proposta.observacoes == 'Vencida' %}table-danger{% elif proposta.observacoes == 'Ganha' %}table-success{% else %}{% endif %}">
+                                <td class="text-center">
+                                    <input type="checkbox" name="ids" value="{{ proposta.id }}" class="form-check-input row-check" form="bulkDeleteForm">
+                                </td>
                                 <td>
                                     <strong>{{ proposta.id_proposta or 'N/A' }}</strong>
                                     {% if grupo.versions %}
@@ -426,6 +436,9 @@
                             {% if grupo.versions %}
                                 {% for versao in grupo.versions %}
                                 <tr class="collapse" id="versoes-{{ proposta.id }}">
+                                    <td class="text-center">
+                                        <input type="checkbox" name="ids" value="{{ versao.id }}" class="form-check-input row-check" form="bulkDeleteForm">
+                                    </td>
                                     <td class="ps-4">
                                         <i class="bi bi-arrow-return-right me-2"></i>
                                         <strong>{{ versao.id_proposta or 'N/A' }}</strong>
@@ -626,5 +639,26 @@
             }
         });
     });
+
+    const bulkBtn = document.getElementById('bulkDeleteBtn');
+    const checkAll = document.getElementById('checkAll');
+    const rowChecks = document.querySelectorAll('.row-check');
+
+    function updateBulkState() {
+        const anyChecked = Array.from(rowChecks).some(cb => cb.checked);
+        const allChecked = rowChecks.length > 0 && Array.from(rowChecks).every(cb => cb.checked);
+        if (bulkBtn) bulkBtn.disabled = !anyChecked;
+        if (checkAll) checkAll.checked = allChecked;
+    }
+
+    if (checkAll) {
+        checkAll.addEventListener('change', function() {
+            rowChecks.forEach(cb => cb.checked = checkAll.checked);
+            updateBulkState();
+        });
+    }
+
+    rowChecks.forEach(cb => cb.addEventListener('change', updateBulkState));
+    updateBulkState();
 </script>
 {% endblock %}

@@ -33,6 +33,7 @@ upload_queue = Queue()
 upload_lock = threading.Lock()
 upload_total = 0
 upload_done = 0
+reprocess_status = {'running': False, 'total': 0, 'done': 0, 'errors': 0}
 
 
 def process_pdf(filepath, filename_original, filename):
@@ -281,6 +282,71 @@ def clean_info(value):
         if lower in ('nao informado', 'não informado', 'nao informado.'):
             return None
     return value
+
+
+def apply_pdf_data(proposta, dados):
+    """Aplica os dados extraídos do PDF na proposta."""
+    proposta.data_emissao = clean_info(dados.get('data_emissao')) or proposta.data_emissao
+    proposta.validade = clean_info(dados.get('validade')) or proposta.validade
+    proposta.instalacao_status = clean_info(dados.get('instalacao_status')) or proposta.instalacao_status
+    proposta.qualificacoes_status = clean_info(dados.get('qualificacoes_status')) or proposta.qualificacoes_status
+    proposta.treinamento_status = clean_info(dados.get('treinamento_status')) or proposta.treinamento_status
+    proposta.garantia_resumo = clean_info(dados.get('garantia_resumo')) or proposta.garantia_resumo
+    proposta.garantia_texto = clean_info(dados.get('garantia_texto')) or proposta.garantia_texto
+    proposta.tipo = clean_info(dados.get('tipo')) or clean_info(proposta.tipo) or extract_tipo_from_filename(proposta.nome_arquivo_pdf)
+    data_emissao_date = parse_date_br(proposta.data_emissao)
+    data_vencimento = compute_data_vencimento(proposta.validade, data_emissao_date)
+    if data_vencimento:
+        proposta.data_vencimento = data_vencimento
+
+
+def replace_itens(proposta, itens):
+    """Substitui os itens associados a uma proposta."""
+    ItemProposta.query.filter_by(proposta_id=proposta.id).delete()
+    for item_data in itens or []:
+        item = ItemProposta(
+            proposta_id=proposta.id,
+            numero=item_data.get('numero'),
+            descricao=item_data.get('descricao'),
+            quantidade=item_data.get('quantidade'),
+            valor_unitario=item_data.get('valor_unitario'),
+            valor_total=item_data.get('valor_total')
+        )
+        db.session.add(item)
+
+
+def _reprocess_all_worker():
+    with app.app_context():
+        propostas = Proposta.query.filter(Proposta.nome_arquivo_pdf.isnot(None)).all()
+        reprocess_status['total'] = len(propostas)
+        reprocess_status['done'] = 0
+        reprocess_status['errors'] = 0
+        batch = 0
+        for proposta in propostas:
+            if not proposta.nome_arquivo_pdf:
+                reprocess_status['done'] += 1
+                continue
+            pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], proposta.nome_arquivo_pdf)
+            if not os.path.exists(pdf_path):
+                reprocess_status['done'] += 1
+                continue
+            try:
+                extractor = PropostaExtractor(pdf_path)
+                dados = extractor.extract_all()
+                if dados:
+                    apply_pdf_data(proposta, dados)
+                    replace_itens(proposta, dados.get('itens'))
+                    batch += 1
+            except Exception as e:
+                reprocess_status['errors'] += 1
+                print(f"Erro reprocessando {proposta.nome_arquivo_pdf}: {e}")
+            reprocess_status['done'] += 1
+            if batch >= 25:
+                db.session.commit()
+                batch = 0
+        if batch:
+            db.session.commit()
+        reprocess_status['running'] = False
 
 
 def split_proposta_id(id_proposta):
@@ -1298,18 +1364,8 @@ def reprocessar_pdf(id):
             flash('Não foi possível extrair informações do PDF.', 'warning')
             return redirect(url_for('listagem'))
 
-        proposta.data_emissao = clean_info(dados.get('data_emissao')) or proposta.data_emissao
-        proposta.validade = clean_info(dados.get('validade')) or proposta.validade
-        proposta.instalacao_status = clean_info(dados.get('instalacao_status')) or proposta.instalacao_status
-        proposta.qualificacoes_status = clean_info(dados.get('qualificacoes_status')) or proposta.qualificacoes_status
-        proposta.treinamento_status = clean_info(dados.get('treinamento_status')) or proposta.treinamento_status
-        proposta.garantia_resumo = clean_info(dados.get('garantia_resumo')) or proposta.garantia_resumo
-        proposta.garantia_texto = clean_info(dados.get('garantia_texto')) or proposta.garantia_texto
-        proposta.tipo = clean_info(dados.get('tipo')) or clean_info(proposta.tipo) or extract_tipo_from_filename(proposta.nome_arquivo_pdf)
-        data_emissao_date = parse_date_br(proposta.data_emissao)
-        data_vencimento = compute_data_vencimento(proposta.validade, data_emissao_date)
-        if data_vencimento:
-            proposta.data_vencimento = data_vencimento
+        apply_pdf_data(proposta, dados)
+        replace_itens(proposta, dados.get('itens'))
 
         db.session.commit()
         flash('PDF reprocessado com sucesso!', 'success')
@@ -1323,42 +1379,14 @@ def reprocessar_pdf(id):
 @app.route('/reprocessar_todos', methods=['POST'])
 def reprocessar_todos():
     """Reprocessa todos os PDFs disponíveis e atualiza campos extraídos."""
-    propostas = Proposta.query.filter(Proposta.nome_arquivo_pdf.isnot(None)).all()
-    total = 0
-    atualizados = 0
-    for proposta in propostas:
-        if not proposta.nome_arquivo_pdf:
-            continue
-        pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], proposta.nome_arquivo_pdf)
-        if not os.path.exists(pdf_path):
-            continue
-        try:
-            extractor = PropostaExtractor(pdf_path)
-            dados = extractor.extract_all()
-            if not dados:
-                continue
-            proposta.data_emissao = clean_info(dados.get('data_emissao')) or proposta.data_emissao
-            proposta.validade = clean_info(dados.get('validade')) or proposta.validade
-            proposta.instalacao_status = clean_info(dados.get('instalacao_status')) or proposta.instalacao_status
-            proposta.qualificacoes_status = clean_info(dados.get('qualificacoes_status')) or proposta.qualificacoes_status
-            proposta.treinamento_status = clean_info(dados.get('treinamento_status')) or proposta.treinamento_status
-            proposta.garantia_resumo = clean_info(dados.get('garantia_resumo')) or proposta.garantia_resumo
-            proposta.garantia_texto = clean_info(dados.get('garantia_texto')) or proposta.garantia_texto
-            proposta.tipo = clean_info(dados.get('tipo')) or clean_info(proposta.tipo) or extract_tipo_from_filename(proposta.nome_arquivo_pdf)
-            data_emissao_date = parse_date_br(proposta.data_emissao)
-            data_vencimento = compute_data_vencimento(proposta.validade, data_emissao_date)
-            if data_vencimento:
-                proposta.data_vencimento = data_vencimento
-            total += 1
-            atualizados += 1
-        except Exception:
-            continue
+    if reprocess_status.get('running'):
+        flash('Reprocessamento já em andamento.', 'warning')
+        return redirect(url_for('listagem'))
 
-    if atualizados:
-        db.session.commit()
-        flash(f'Reprocessamento concluído! {atualizados} PDFs atualizados.', 'success')
-    else:
-        flash('Nenhum PDF foi reprocessado.', 'warning')
+    reprocess_status['running'] = True
+    thread = threading.Thread(target=_reprocess_all_worker, daemon=True)
+    thread.start()
+    flash('Reprocessamento iniciado em segundo plano. Aguarde alguns minutos.', 'success')
     return redirect(url_for('listagem'))
 
 
@@ -1382,6 +1410,37 @@ def deletar(id):
         flash(f'Erro ao deletar proposta: {str(e)}', 'error')
         db.session.rollback()
     
+    return redirect(url_for('listagem'))
+
+
+@app.route('/deletar_multiplos', methods=['POST'])
+def deletar_multiplos():
+    """Deletar múltiplas propostas selecionadas."""
+    ids = request.form.getlist('ids')
+    if not ids:
+        flash('Selecione pelo menos uma proposta para excluir.', 'warning')
+        return redirect(url_for('listagem'))
+
+    try:
+        ids_int = [int(i) for i in ids]
+    except Exception:
+        flash('IDs inválidos para exclusão.', 'error')
+        return redirect(url_for('listagem'))
+
+    try:
+        propostas = Proposta.query.filter(Proposta.id.in_(ids_int)).all()
+        for proposta in propostas:
+            if proposta.nome_arquivo_pdf:
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], proposta.nome_arquivo_pdf)
+                if os.path.exists(filepath):
+                    os.remove(filepath)
+            db.session.delete(proposta)
+        db.session.commit()
+        flash(f'{len(propostas)} proposta(s) excluída(s) com sucesso!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f'Erro ao excluir propostas: {str(e)}', 'error')
+
     return redirect(url_for('listagem'))
 
 
