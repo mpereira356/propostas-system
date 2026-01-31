@@ -428,6 +428,7 @@ class PropostaExtractor:
         header_ignore = re.compile(r'(It\.\s+Descricao|Qt|Unitario|Unit\u00e1rio|Valor\s+Unit|Valor\s+Total|Sub\s*Total|em\s*R\$|\(em\s*R\$\))', re.IGNORECASE)
 
         descricao_buffer = []
+        skip_prefix = re.compile(r'^(Marca/Fabricante|Fabricante|Proced[eê]ncia|Registro|Desconto)\\b', re.IGNORECASE)
         i = idx_inicio + 1
         fallback_num = 1
         while i < idx_fim:
@@ -454,6 +455,9 @@ class PropostaExtractor:
                     descricao_parts.append(parte_antes)
 
                 descricao = ' '.join(descricao_parts).strip() or None
+                if descricao and skip_prefix.search(descricao):
+                    i += 1
+                    continue
 
                 numero = None
                 quantidade = None
