@@ -515,9 +515,10 @@ def listagem():
             alterou = True
 
         if proposta.vencida:
-            if proposta.observacoes != 'Vencida':
-                proposta.observacoes = 'Vencida'
-                alterou = True
+            if proposta.observacoes in (None, '', 'Em negociação', 'Vencida'):
+                if proposta.observacoes != 'Vencida':
+                    proposta.observacoes = 'Vencida'
+                    alterou = True
         elif not proposta.observacoes:
             proposta.observacoes = 'Em negociação'
             alterou = True
