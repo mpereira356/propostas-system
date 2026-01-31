@@ -360,44 +360,53 @@
                                     {% endif %}
                                 </td>
                                 <td class="text-center">
-                                    <div class="actions-wrap">
-                                    {% if proposta.observacoes != 'Vencida' %}
-                                    <form method="POST" action="{{ url_for('atualizar_observacoes', id=proposta.id) }}" class="d-inline">
-                                        <input type="hidden" name="observacoes" value="Em negociação">
-                                        <button type="submit" class="btn btn-sm btn-action-negotiation" title="Em negociação">
-                                            <i class="bi bi-arrow-repeat"></i>
+                                    <div class="btn-group actions-wrap">
+                                        <a href="{{ url_for('detalhes', id=proposta.id) }}" 
+                                           class="btn btn-sm btn-action-view"
+                                           title="Ver detalhes">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                        <button type="button"
+                                                class="btn btn-sm btn-action-edit dropdown-toggle dropdown-toggle-split"
+                                                data-bs-toggle="dropdown"
+                                                aria-expanded="false"
+                                                title="Mais ações">
+                                            <i class="bi bi-list"></i>
                                         </button>
-                                    </form>
-                                    <form method="POST" action="{{ url_for('atualizar_observacoes', id=proposta.id) }}" class="d-inline">
-                                        <input type="hidden" name="observacoes" value="Ganha">
-                                        <button type="submit" class="btn btn-sm btn-action-win" title="Marcar como ganha">
-                                            <i class="bi bi-check-circle"></i>
-                                        </button>
-                                    </form>
-                                    <form method="POST" action="{{ url_for('atualizar_observacoes', id=proposta.id) }}" class="d-inline">
-                                        <input type="hidden" name="observacoes" value="Perdida">
-                                        <button type="submit" class="btn btn-sm btn-action-delete" title="Marcar como perdida">
-                                            <i class="bi bi-x-circle"></i>
-                                        </button>
-                                    </form>
-                                    {% endif %}
-                                    <a href="{{ url_for('detalhes', id=proposta.id) }}" 
-                                       class="btn btn-sm btn-action-view"
-                                       title="Ver detalhes">
-                                        <i class="bi bi-eye"></i>
-                                    </a>
-                                    <a href="{{ url_for('editar', id=proposta.id) }}"
-                                       class="btn btn-sm btn-action-edit"
-                                       title="Editar">
-                                        <i class="bi bi-pencil-square"></i>
-                                    </a>
-                                    <button type="button" 
-                                            class="btn btn-sm btn-action-delete"
-                                            onclick="confirmarDelete({{ proposta.id }}, '{{ proposta.id_proposta }}')"
-                                            title="Deletar">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                                                    </div>
+                                        <ul class="dropdown-menu dropdown-menu-end">
+                                            {% if proposta.observacoes != 'Vencida' %}
+                                            <li>
+                                                <form method="POST" action="{{ url_for('atualizar_observacoes', id=proposta.id) }}">
+                                                    <input type="hidden" name="observacoes" value="Em negociação">
+                                                    <button type="submit" class="dropdown-item">Em negociação</button>
+                                                </form>
+                                            </li>
+                                            <li>
+                                                <form method="POST" action="{{ url_for('atualizar_observacoes', id=proposta.id) }}">
+                                                    <input type="hidden" name="observacoes" value="Ganha">
+                                                    <button type="submit" class="dropdown-item">Marcar como ganha</button>
+                                                </form>
+                                            </li>
+                                            <li>
+                                                <form method="POST" action="{{ url_for('atualizar_observacoes', id=proposta.id) }}">
+                                                    <input type="hidden" name="observacoes" value="Perdida">
+                                                    <button type="submit" class="dropdown-item">Marcar como perdida</button>
+                                                </form>
+                                            </li>
+                                            <li><hr class="dropdown-divider"></li>
+                                            {% endif %}
+                                            <li>
+                                                <a href="{{ url_for('editar', id=proposta.id) }}" class="dropdown-item">Editar</a>
+                                            </li>
+                                            <li>
+                                                <button type="button"
+                                                        class="dropdown-item text-danger"
+                                                        onclick="confirmarDelete({{ proposta.id }}, '{{ proposta.id_proposta }}')">
+                                                    Deletar
+                                                </button>
+                                            </li>
+                                        </ul>
+                                    </div>
                                 </td>
                             </tr>
                             {% if grupo.versions %}
@@ -435,44 +444,53 @@
                                         {% endif %}
                                     </td>
                                     <td class="text-center">
-                                        <div class="actions-wrap">
-                                        {% if versao.observacoes != 'Vencida' %}
-                                        <form method="POST" action="{{ url_for('atualizar_observacoes', id=versao.id) }}" class="d-inline">
-                                            <input type="hidden" name="observacoes" value="Em negociação">
-                                        <button type="submit" class="btn btn-sm btn-action-negotiation" title="Em negociação">
-                                            <i class="bi bi-arrow-repeat"></i>
-                                        </button>
-                                    </form>
-                                    <form method="POST" action="{{ url_for('atualizar_observacoes', id=versao.id) }}" class="d-inline">
-                                        <input type="hidden" name="observacoes" value="Ganha">
-                                            <button type="submit" class="btn btn-sm btn-action-win" title="Marcar como ganha">
-                                                <i class="bi bi-check-circle"></i>
+                                        <div class="btn-group actions-wrap">
+                                            <a href="{{ url_for('detalhes', id=versao.id) }}" 
+                                               class="btn btn-sm btn-action-view"
+                                               title="Ver detalhes">
+                                                <i class="bi bi-eye"></i>
+                                            </a>
+                                            <button type="button"
+                                                    class="btn btn-sm btn-action-edit dropdown-toggle dropdown-toggle-split"
+                                                    data-bs-toggle="dropdown"
+                                                    aria-expanded="false"
+                                                    title="Mais ações">
+                                                <i class="bi bi-list"></i>
                                             </button>
-                                        </form>
-                                        <form method="POST" action="{{ url_for('atualizar_observacoes', id=versao.id) }}" class="d-inline">
-                                            <input type="hidden" name="observacoes" value="Perdida">
-                                            <button type="submit" class="btn btn-sm btn-action-delete" title="Marcar como perdida">
-                                                <i class="bi bi-x-circle"></i>
-                                            </button>
-                                        </form>
-                                        {% endif %}
-                                        <a href="{{ url_for('detalhes', id=versao.id) }}" 
-                                           class="btn btn-sm btn-action-view"
-                                           title="Ver detalhes">
-                                            <i class="bi bi-eye"></i>
-                                        </a>
-                                        <a href="{{ url_for('editar', id=versao.id) }}"
-                                           class="btn btn-sm btn-action-edit"
-                                           title="Editar">
-                                            <i class="bi bi-pencil-square"></i>
-                                        </a>
-                                        <button type="button" 
-                                                class="btn btn-sm btn-action-delete"
-                                                onclick="confirmarDelete({{ versao.id }}, '{{ versao.id_proposta }}')"
-                                                title="Deletar">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                                                            </div>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                {% if versao.observacoes != 'Vencida' %}
+                                                <li>
+                                                    <form method="POST" action="{{ url_for('atualizar_observacoes', id=versao.id) }}">
+                                                        <input type="hidden" name="observacoes" value="Em negociação">
+                                                        <button type="submit" class="dropdown-item">Em negociação</button>
+                                                    </form>
+                                                </li>
+                                                <li>
+                                                    <form method="POST" action="{{ url_for('atualizar_observacoes', id=versao.id) }}">
+                                                        <input type="hidden" name="observacoes" value="Ganha">
+                                                        <button type="submit" class="dropdown-item">Marcar como ganha</button>
+                                                    </form>
+                                                </li>
+                                                <li>
+                                                    <form method="POST" action="{{ url_for('atualizar_observacoes', id=versao.id) }}">
+                                                        <input type="hidden" name="observacoes" value="Perdida">
+                                                        <button type="submit" class="dropdown-item">Marcar como perdida</button>
+                                                    </form>
+                                                </li>
+                                                <li><hr class="dropdown-divider"></li>
+                                                {% endif %}
+                                                <li>
+                                                    <a href="{{ url_for('editar', id=versao.id) }}" class="dropdown-item">Editar</a>
+                                                </li>
+                                                <li>
+                                                    <button type="button"
+                                                            class="dropdown-item text-danger"
+                                                            onclick="confirmarDelete({{ versao.id }}, '{{ versao.id_proposta }}')">
+                                                        Deletar
+                                                    </button>
+                                                </li>
+                                            </ul>
+                                        </div>
                                     </td>
                                 </tr>
                                 {% endfor %}

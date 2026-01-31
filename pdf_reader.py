@@ -113,7 +113,7 @@ class PropostaExtractor:
         treinamento_text = self._find_section_by_numbered_heading('TREINAMENTO')
 
         qualificacoes_status = self._extract_incluso_status(qualificacoes_text)
-        if qualificacoes_text:
+        if qualificacoes_text and qualificacoes_status == "Incluso":
             inclui_qi = re.search(r'\bQI\b', qualificacoes_text, re.IGNORECASE) is not None
             inclui_qo = re.search(r'\bQO\b', qualificacoes_text, re.IGNORECASE) is not None
             inclui_qd = re.search(r'\bQD\b', qualificacoes_text, re.IGNORECASE) is not None
