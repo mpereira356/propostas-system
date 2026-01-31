@@ -12,7 +12,7 @@ from flask import Flask, render_template, request, redirect, url_for, flash, jso
 from werkzeug.utils import secure_filename
 from models import db, Proposta, ItemProposta, Cliente, Setor, Regiao, Visita, Contato, Equipamento, init_db
 from pdf_reader import PropostaExtractor
-from sqlalchemy import text, func, literal
+from sqlalchemy import text, func, literal, case
 from openpyxl import Workbook
 from openpyxl.utils import get_column_letter
 
@@ -294,6 +294,14 @@ def ensure_schema():
             conn.execute(text("ALTER TABLE propostas ADD COLUMN id_proposta_base VARCHAR(50)"))
         if 'versao' not in existing:
             conn.execute(text("ALTER TABLE propostas ADD COLUMN versao VARCHAR(5)"))
+        # Índices para acelerar a listagem/paginação
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_propostas_base ON propostas(id_proposta_base)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_propostas_import ON propostas(data_importacao)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_propostas_obs ON propostas(observacoes)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_propostas_cnpj ON propostas(cnpj)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_propostas_razao ON propostas(razao_social)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_propostas_cod ON propostas(cod_vendedor)"))
+        conn.execute(text("CREATE INDEX IF NOT EXISTS idx_propostas_id ON propostas(id_proposta)"))
 
         # Visitas: ajustes de schema
         try:
@@ -492,7 +500,8 @@ def listagem():
     else:
         current_query = current_query.order_by(order_col.asc())
 
-    total_propostas = current_query.count()
+    count_query = current_query.order_by(None)
+    total_propostas = count_query.count()
     total_pages = max(ceil(total_propostas / per_page), 1)
     if page > total_pages:
         page = total_pages
@@ -588,10 +597,16 @@ def listagem():
     if alterou:
         db.session.commit()
 
-    total_ganhas = current_query.filter(Proposta.observacoes == 'Ganha').count()
-    total_perdidas = current_query.filter(Proposta.observacoes == 'Perdida').count()
-    total_abertas = current_query.filter(Proposta.observacoes == 'Em negociação').count()
-    total_vencidas_dashboard = current_query.filter(Proposta.observacoes == 'Vencida').count()
+    totals = count_query.with_entities(
+        func.sum(case((Proposta.observacoes == 'Ganha', 1), else_=0)).label('ganhas'),
+        func.sum(case((Proposta.observacoes == 'Perdida', 1), else_=0)).label('perdidas'),
+        func.sum(case((Proposta.observacoes == 'Em negociação', 1), else_=0)).label('abertas'),
+        func.sum(case((Proposta.observacoes == 'Vencida', 1), else_=0)).label('vencidas')
+    ).first()
+    total_ganhas = totals.ganhas or 0
+    total_perdidas = totals.perdidas or 0
+    total_abertas = totals.abertas or 0
+    total_vencidas_dashboard = totals.vencidas or 0
     total_vencidas = total_vencidas_dashboard
 
     return render_template('listagem.html', 
