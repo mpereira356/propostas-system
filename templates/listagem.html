@@ -117,9 +117,16 @@
                 <h4 class="mb-0">
                     <i class="bi bi-list-ul"></i> Propostas Importadas
                 </h4>
-                <a href="{{ url_for('upload') }}" class="btn btn-nova-importacao btn-sm">
-                    <i class="bi bi-plus-circle"></i> Nova Importação
-                </a>
+                <div class="d-flex gap-2">
+                    <form method="POST" action="{{ url_for('reprocessar_todos') }}" onsubmit="return confirm('Reprocessar todos os PDFs? Isso pode demorar.');">
+                        <button type="submit" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-arrow-repeat"></i> Reprocessar PDFs
+                        </button>
+                    </form>
+                    <a href="{{ url_for('upload') }}" class="btn btn-nova-importacao btn-sm">
+                        <i class="bi bi-plus-circle"></i> Nova Importação
+                    </a>
+                </div>
             </div>
             <div class="card-body">
                 <div class="row g-3 mb-4">

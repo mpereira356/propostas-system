@@ -1258,6 +1258,41 @@ def reprocessar_pdf(id):
     return redirect(url_for('listagem'))
 
 
+@app.route('/reprocessar_todos', methods=['POST'])
+def reprocessar_todos():
+    """Reprocessa todos os PDFs disponíveis e atualiza campos extraídos."""
+    propostas = Proposta.query.filter(Proposta.nome_arquivo_pdf.isnot(None)).all()
+    total = 0
+    atualizados = 0
+    for proposta in propostas:
+        if not proposta.nome_arquivo_pdf:
+            continue
+        pdf_path = os.path.join(app.config['UPLOAD_FOLDER'], proposta.nome_arquivo_pdf)
+        if not os.path.exists(pdf_path):
+            continue
+        try:
+            extractor = PropostaExtractor(pdf_path)
+            dados = extractor.extract_all()
+            if not dados:
+                continue
+            proposta.instalacao_status = dados.get('instalacao_status') or proposta.instalacao_status
+            proposta.qualificacoes_status = dados.get('qualificacoes_status') or proposta.qualificacoes_status
+            proposta.treinamento_status = dados.get('treinamento_status') or proposta.treinamento_status
+            proposta.garantia_resumo = dados.get('garantia_resumo') or proposta.garantia_resumo
+            proposta.garantia_texto = dados.get('garantia_texto') or proposta.garantia_texto
+            total += 1
+            atualizados += 1
+        except Exception:
+            continue
+
+    if atualizados:
+        db.session.commit()
+        flash(f'Reprocessamento concluído! {atualizados} PDFs atualizados.', 'success')
+    else:
+        flash('Nenhum PDF foi reprocessado.', 'warning')
+    return redirect(url_for('listagem'))
+
+
 @app.route('/deletar/<int:id>', methods=['POST'])
 def deletar(id):
     """Deletar uma proposta"""
